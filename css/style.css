@@ -202,3 +202,18 @@ ul.srcs a{color:var(--accent)}
 #tourpill{left:10px;transform:none;max-width:calc(100% - 78px);width:max-content}#tpLabel{flex:1 1 auto;max-width:none}
 #tourpill button{padding:6px 9px;font-size:12.5px}
 .photos{margin:12px 0 4px;display:flex;flex-direction:column;gap:12px}.photos figure{margin:0}.photos img{width:100%;max-height:260px;object-fit:cover;border-radius:10px;background:var(--chip);display:block;min-height:90px}.photos figcaption{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.35}.photos figcaption a{color:var(--accent)}
+
+/* old maps overlay panel */
+#mapsP{position:absolute;left:10px;right:10px;bottom:calc(var(--eras-h) + var(--sb) + 8px);z-index:7;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 12px 12px;box-shadow:0 4px 18px rgba(0,0,0,.35);transform:translateY(200%);visibility:hidden;transition:transform .25s ease,visibility 0s .25s;font-family:var(--font);max-height:60%;overflow:auto}
+#mapsP.open{transform:none;visibility:visible;transition:transform .25s ease,visibility 0s}
+body.mapsopen #hint{display:none}
+body.mapsopen #sheet{bottom:calc(var(--eras-h) + var(--sb) + 190px);max-height:34%}
+.mh{display:flex;align-items:center;justify-content:space-between}.mh b{font-size:16px}.mh .x{position:static;width:32px;height:32px;font-size:20px}
+.mchips{display:flex;gap:6px;overflow-x:auto;padding:8px 0 6px;-webkit-overflow-scrolling:touch}
+.mchips button{flex:0 0 auto;border:1px solid var(--line);background:var(--chip);border-radius:12px;padding:6px 11px;font:inherit;font-size:14px;line-height:1.2;text-align:center;color:var(--ink)}
+.mchips button small{display:block;font-size:10.5px;color:var(--muted);white-space:nowrap}
+.mchips button.on{background:var(--accent);color:#fff;border-color:transparent}.mchips button.on small{color:rgba(255,255,255,.88)}
+.mn{font-weight:700;font-size:15px}.mnote{font-size:12.5px;color:var(--muted);margin:2px 0 6px}
+.mop{display:flex;align-items:center;gap:10px;margin:6px 0}.mop input{flex:1;accent-color:var(--accent)}.mop span:last-child{width:42px;text-align:right}.mop span{font-size:13px}
+.mst{font-size:12px;color:var(--muted);min-height:15px}.msrc{font-size:11.5px;color:var(--muted);margin-top:4px;user-select:text;-webkit-user-select:text}.msrc a{color:var(--accent)}
+@media (min-width:900px){#mapsP{left:auto;right:calc(var(--sr) + 76px);width:380px}}
