@@ -1,5 +1,5 @@
 /* Service worker: precaches the whole app so it works fully offline. Bump VERSION when you change any file. */
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 const CACHE = 'nuremberg-map-' + VERSION;
 const CORE = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
