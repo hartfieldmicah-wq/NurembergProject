@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Nuremberg Then &amp; Now</title>
+<meta name="description" content="An offline historical map of Nuremberg: 1648, before the war, after the bombing, and today.">
+<meta name="theme-color" content="#1d1b18">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Nuremberg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icons/apple-touch-icon-152.png">
+<link rel="apple-touch-icon" sizes="167x167" href="icons/apple-touch-icon-167.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="style-old era-now">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-castle" viewBox="0 0 24 24"><path d="M4 21V9h3V6h2v3h2V6h2v3h2V6h2v3h3v12z"/><path d="M10 21v-5a2 2 0 0 1 4 0v5"/></symbol>
+    <symbol id="i-church" viewBox="0 0 24 24"><path d="M12 2v4M10 4h4"/><path d="M12 6l5 5v10H7V11z"/><path d="M10 21v-4a2 2 0 0 1 4 0v4"/></symbol>
+    <symbol id="i-tower" viewBox="0 0 24 24"><path d="M6 21V8h12v13"/><path d="M6 8V5h2v2h2V5h4v2h2V5h2v3"/><path d="M10 21v-5a2 2 0 0 1 4 0v5"/></symbol>
+    <symbol id="i-museum" viewBox="0 0 24 24"><path d="M3 9l9-5 9 5z"/><path d="M5 10v8M9 10v8M15 10v8M19 10v8"/><path d="M3 21h18"/></symbol>
+    <symbol id="i-scales" viewBox="0 0 24 24"><path d="M12 3v18M7 21h10M5 7h14"/><path d="M5 7l-3 7a3 3 0 0 0 6 0zM19 7l-3 7a3 3 0 0 0 6 0z"/></symbol>
+    <symbol id="i-bridge" viewBox="0 0 24 24"><path d="M2 17h20M2 21h20"/><path d="M4 17a8 8 0 0 1 16 0"/></symbol>
+    <symbol id="i-train" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M9 21l2-4M15 21l-2-4"/></symbol>
+    <symbol id="i-fountain" viewBox="0 0 24 24"><path d="M12 3v7M8 21h8M10 21v-6h4v6"/><path d="M6 10a6 6 0 0 0 12 0z"/></symbol>
+    <symbol id="i-cross" viewBox="0 0 24 24"><path d="M12 3v18M7 8h10"/></symbol>
+    <symbol id="i-stadium" viewBox="0 0 24 24"><path d="M3 20h18M5 20v-6h14v6M8 14v-4h8v4"/></symbol>
+    <symbol id="i-house" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M6 10v10h12V10"/><path d="M10 20v-5h4v5"/></symbol>
+    <symbol id="i-hall" viewBox="0 0 24 24"><path d="M3 10l9-6 9 6z"/><path d="M5 10v9h14v-9"/><path d="M10 19v-5h4v5M12 4v-2"/></symbol>
+  </defs>
+</svg>
+
+<div id="app">
+  <div id="map" tabindex="0" role="application" aria-label="Map of Nuremberg. Drag to pan, pinch or scroll to zoom.">
+    <canvas id="canvas"></canvas>
+    <div id="layer">
+      <div id="user" hidden><div class="acc"></div><div class="dot"></div></div>
+      <div id="pins"></div>
+    </div>
+    <div id="frame" aria-hidden="true"></div>
+    <svg id="compass" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="30" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="50" cy="50" r="23" fill="none" stroke="currentColor" stroke-width=".6"/><path d="M50 4l6 40 40 6-40 6-6 40-6-40-40-6 40-6z" fill="currentColor" opacity=".85"/><path d="M50 22l3 25 25 3-25 3-3 25-3-25-25-3 25-3z" fill="#e6d7b0"/><text x="50" y="14" text-anchor="middle" font-size="11" fill="currentColor" font-family="serif" font-weight="bold">N</text></svg>
+  </div>
+
+  <header id="top">
+    <div class="brand"><span class="t1">Nuremberg</span><span class="t2" id="eraCaption">Today</span></div>
+    <div class="seg" id="styleSeg" role="group" aria-label="Map style">
+      <button data-style="modern" type="button">Modern</button>
+      <button data-style="old" type="button">Old map</button>
+    </div>
+  </header>
+
+  <div id="side">
+    <button id="bLocate" class="fab" type="button" aria-label="Show my location"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></button>
+    <button id="bList" class="fab" type="button" aria-label="List of landmarks"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg></button>
+    <button id="bInfo" class="fab" type="button" aria-label="About and help"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg></button>
+    <div class="zoom"><button id="bZin" class="fab" type="button" aria-label="Zoom in"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button><button id="bZout" class="fab" type="button" aria-label="Zoom out"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button></div>
+  </div>
+
+  <button id="nearest" type="button" hidden></button>
+  <div id="hint">Tap a pin to explore &middot; use the timeline below to travel in time</div>
+
+  <nav id="eras" role="tablist" aria-label="Time period"></nav>
+
+  <section id="sheet" aria-hidden="true">
+    <div class="grab" id="grab"></div>
+    <button class="x" id="sheetX" type="button" aria-label="Close">&times;</button>
+    <div id="sheetBody"></div>
+  </section>
+
+  <section id="list" aria-hidden="true">
+    <div class="listhead"><h2>Landmarks</h2><button class="x" id="listX" type="button" aria-label="Close">&times;</button></div>
+    <input id="q" type="search" placeholder="Search landmarks" autocomplete="off">
+    <div id="chips"></div>
+    <ul id="items"></ul>
+  </section>
+
+  <section id="about" aria-hidden="true">
+    <div class="card">
+      <button class="x" id="aboutX" type="button" aria-label="Close">&times;</button>
+      <div id="aboutBody"></div>
+    </div>
+  </section>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/osm-data.js"></script>
+<script src="js/basemap.js"></script>
+<script src="js/mapview.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
