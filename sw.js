@@ -1,9 +1,9 @@
 /* Service worker: precaches the whole app so it works fully offline. Bump VERSION when you change any file. */
-const VERSION = '1.2.0';
+const VERSION = '1.3.0';
 const CACHE = 'nuremberg-map-' + VERSION;
 const CORE = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
-  'js/data.js', 'js/osm-data.js', 'js/basemap.js', 'js/mapview.js', 'js/app.js',
+  'js/data.js', 'js/data2.js', 'js/i18n.js', 'js/btags.js', 'js/osm-data.js', 'js/basemap.js', 'js/mapview.js', 'js/app.js',
   'apple-touch-icon.png', 'icons/favicon-32.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png',
   'icons/apple-touch-icon-152.png', 'icons/apple-touch-icon-167.png', 'icons/apple-touch-icon-180.png'
 ];
