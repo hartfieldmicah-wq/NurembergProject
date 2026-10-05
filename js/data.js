@@ -37,10 +37,10 @@ const LANDMARKS = [
   fp: { type: 'castle', rot: 0, poly: [[-70,-8],[-50,12],[-20,16],[10,14],[50,10],[75,0],[60,-14],[20,-12],[-20,-16],[-55,-12]] },
   wiki: 'Nuremberg Castle',
   eras: {
-    '1648': ['standing', 'Still the emperor\'s castle, high above a walled Free Imperial City. The Thirty Years\' War (1618-48) was ending; the city had been besieged in 1632 and was weakened, but its walls and towers stood.'],
+    '1648': ['standing', 'Still the emperor\'s castle, high above a walled Free Imperial City. The Thirty Years\' War (1618-48) was ending; in 1632 the armies of Gustavus Adolphus and Wallenstein had camped before the city, which was weakened, but its walls and towers stood.'],
     '1939': ['standing', 'A national monument. The Nazi regime leaned on Nuremberg\'s imperial past in its propaganda, and from the early war years rock cellars under the castle hill were used to shelter art treasures.'],
     '1945': ['ruin', 'The air raid of 2 January 1945 and the battle in April left the castle badly damaged; roofs and interiors of several buildings were destroyed.'],
-    'now':  ['rebuilt', 'Rebuilt over decades and open as a museum. Climb the Sinwell Tower for the view and see the Deep Well, around 48 m deep.']
+    'now':  ['rebuilt', 'Rebuilt over decades and open as a museum. Climb the Sinwell Tower for the view and see the Deep Well, roughly 50 m deep.']
   },
   facts: ['The Golden Bull of 1356 required each new German king to hold his first imperial diet in Nuremberg.',
           'Nuremberg first appears in written records in 1050.',
@@ -55,7 +55,7 @@ const LANDMARKS = [
   eras: {
     '1648': ['standing', 'Dürer died in 1528 and the half-timbered house had long passed to other owners; it was one more house on the slope below the castle.'],
     '1939': ['standing', 'A museum since 1871, the 400th anniversary of Dürer\'s birth, and one of the most photographed houses in the city.'],
-    '1945': ['damaged', 'Damaged in the bombing, but the house survived and was repaired after the war.'],
+    '1945': ['damaged', 'Heavily damaged in an Allied raid in October 1944; rebuilt by 1949.'],
     'now':  ['rebuilt', 'Restored and open to visitors, with furnished rooms and a graphics workshop that shows Dürer\'s working life.']
   },
   facts: ['Dürer lived and worked here from 1509 until his death in 1528.',
@@ -134,7 +134,7 @@ const LANDMARKS = [
 },
 {
   id: 'weisserturm', name: 'Weißer Turm (White Tower)', cat: 'castle', icon: 'tower',
-  lat: 49.45045, lon: 11.07072, built: '14th century',
+  lat: 49.45045, lon: 11.07072, built: '13th-14th century',
   blurb: 'A medieval gate tower at the western end of the main shopping streets.',
   fp: { type: 'tower', w: 14 },
   wiki: 'Weißer Turm Nuremberg',
@@ -144,16 +144,16 @@ const LANDMARKS = [
     '1945': ['damaged', 'Damaged in the air raids that flattened much of the quarter around it.'],
     'now':  ['rebuilt', 'Restored; it is still the western gateway to the pedestrian shopping streets.']
   },
-  facts: ['It belongs to the second ring of city walls, built in the 14th century.']
+  facts: ['It was a gate in the older inner ring of the city walls, with origins in the 13th century.']
 },
 {
   id: 'spital', name: 'Heilig-Geist-Spital', cat: 'civic', icon: 'bridge',
-  lat: 49.45301, lon: 11.07963, built: 'founded 1332',
+  lat: 49.45301, lon: 11.07963, built: 'founded 1330s',
   blurb: 'A hospital built across the river Pegnitz, once guardian of the imperial crown jewels.',
   fp: { type: 'hall', w: 70, h: 26, rot: 0 },
   wiki: 'Heilig-Geist-Spital Nuremberg',
   eras: {
-    '1648': ['standing', 'A charitable hospital founded in 1332 that arched across the river. Its church held the empire\'s crown jewels from 1424.'],
+    '1648': ['standing', 'A charitable hospital founded in the 1330s that arched across the river. Its church held the empire\'s crown jewels from 1424.'],
     '1939': ['standing', 'Still a charitable foundation and a familiar riverside sight in the old town.'],
     '1945': ['ruin', 'Burned out in the raids; only parts of the structure remained.'],
     'now':  ['rebuilt', 'Rebuilt after the war; its arches again span the Pegnitz.']
@@ -162,15 +162,15 @@ const LANDMARKS = [
 },
 {
   id: 'henkersteg', name: 'Henkersteg & Weinstadel', cat: 'civic', icon: 'bridge',
-  lat: 49.45311, lon: 11.07306, built: '16th century',
+  lat: 49.45311, lon: 11.07306, built: '1457; rebuilt 1595',
   blurb: 'The covered "Hangman\'s Bridge" beside the half-timbered Weinstadel.',
   fp: { type: 'hall', w: 55, h: 14, rot: 10 },
   wiki: 'Henkersteg',
   eras: {
-    '1648': ['standing', 'A covered wooden footbridge beside the old wine warehouse, named for the executioner who lived nearby.'],
+    '1648': ['standing', 'A covered wooden footbridge (rebuilt after the flood collapse of 1595) beside the old wine warehouse, named for the executioner\'s tower nearby.'],
     '1939': ['standing', 'A postcard favourite: half-timbered houses, covered bridge and river, a symbol of "romantic" old Nuremberg.'],
     '1945': ['ruin', 'Severely damaged in the 1945 bombing; one of the most photographed corners of the city lay in ruins.'],
-    'now':  ['rebuilt', 'Reconstructed after the war and again one of the city\'s classic views.']
+    'now':  ['rebuilt', 'Reconstructed in 1954 and again one of the city\'s classic views.']
   },
   facts: ['The bridge is named for the hangman, whose quarters stood nearby.']
 },
@@ -262,14 +262,14 @@ const LANDMARKS = [
 },
 {
   id: 'johannis', name: 'Johannisfriedhof (St. John\'s Cemetery)', cat: 'culture', icon: 'cross',
-  lat: 49.45858, lon: 11.06125, built: 'c. 1300',
+  lat: 49.45858, lon: 11.06125, built: 'founded 1234 (leper house); burial ground by 1238',
   blurb: 'Medieval cemetery with the graves of Albrecht Dürer and other Nuremberg greats.',
   fp: { type: 'yard', w: 300, h: 120, rot: -20 },
   wiki: 'Johannisfriedhof Nuremberg',
   eras: {
-    '1648': ['standing', 'Already centuries old, famous for flat sandstone graves with bronze epitaphs. Dürer had been buried here in 1528.'],
+    '1648': ['standing', 'Long established outside the walls and famous for flat sandstone graves with bronze epitaphs. Dürer had been buried here in 1528.'],
     '1939': ['standing', 'A tree-shaded cemetery just outside the old town and a place of pilgrimage for Dürer admirers.'],
-    '1945': ['damaged', 'Air raids caused some damage, but the cemetery largely survived.'],
+    '1945': ['damaged', 'Air raids caused some damage (e.g. the Holzschuher Chapel), but the cemetery largely survived.'],
     'now':  ['standing', 'Still in use and open to visitors; look for Dürer\'s grave (no. 649).']
   },
   facts: ['Veit Stoss is buried here too.']

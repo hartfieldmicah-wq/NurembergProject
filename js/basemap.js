@@ -33,7 +33,7 @@ O.b.forEach((a, i) => {
   const p = dec(a, 1), n = p.length / 2; let cx = 0, cy = 0, A = 0;
   for (let k = 0; k < n; k++) { const x = p[2 * k], y = p[2 * k + 1], x2 = p[2 * ((k + 1) % n)], y2 = p[2 * ((k + 1) % n) + 1]; cx += x; cy += y; A += x * y2 - x2 * y; }
   cx /= n; cy /= n;
-  BLD.push(bb({ p, f: a[0], cx, cy, ar: Math.abs(A) / 2, r: hash(i), lm: -1, dd: Math.hypot(cx, cy) }, p));
+  BLD.push(bb({ p, i, f: a[0], cx, cy, ar: Math.abs(A) / 2, r: hash(i), lm: -1, dd: Math.hypot(cx, cy) }, p));
 });
 const ROAD = [[], [], [], [], [], [], [], []];
 O.road.forEach(a => { const c = a[0] & 7, p = dec(a, 1); if (p.length >= 4) ROAD[c].push(bb({ p }, p)); });
@@ -94,7 +94,10 @@ function drawOblique(ctx, T, V, PT, lo, mpp) {
 const LM = D.LANDMARKS.map(l => Object.assign({ m: ll2m(l.lon, l.lat) }, l));
 const ASSOC = { kaiserburg: [110, .06], durer: [16, .3], frauenkirche: [30, .5], sebald: [45, .5], lorenz: [55, .5], rathaus: [50, .4],
   weisserturm: [20, .5], spital: [45, .3], henkersteg: [25, .15], koenigstor: [25, .3], hbf: [140, .2], gnm: [110, .15],
-  justiz: [90, .3], zeppelin: [150, .05], kongress: [260, .5] };
+  justiz: [90, .3], zeppelin: [150, .05], kongress: [260, .5],
+  pellerhaus: [28, .4], fembohaus: [16, .3], tucherschloss: [26, .3], st_egidien: [40, .5], st_klara: [30, .5], martha: [20, .5], katharinenruine: [30, .5],
+  nassauer: [12, .4], mauthalle: [35, .5], spielzeug: [12, .4], meistersinger: [70, .3], neues_museum: [40, .4], max_morlock_stadion: [150, .1],
+  tiergaertnertor: [14, .4], neutor: [20, .3], spittlertor: [14, .5], laufer: [12, .5], luginsland: [30, .25], hirsvogel: [14, .5] };
 LM.forEach((l, li) => {
   l.bl = []; const c = ASSOC[l.id]; if (!c) return;
   let mx = 0; const cand = [];
@@ -285,6 +288,13 @@ function draw(ctx, V, o) {
     if (ruin || st === 'damaged') { ctx.beginPath(); let i = 0; for (const b of l.bl) { const n = Math.min(26, 4 + Math.round(Math.sqrt(b.ar) / 2)); for (let j = 0; j < n; j++) { const h1 = hash(li * 977 + i * 31 + j), h2 = hash(li * 313 + i * 17 + j + 9), x = b.x0 + (b.x1 - b.x0) * h1, y = b.y0 + (b.y1 - b.y0) * h2, s = 1.6 + h1 * 2.2; ctx.moveTo(x, y); ctx.lineTo(x + s, y + s * .4); ctx.lineTo(x + s * .2, y + s); ctx.closePath(); } i++; } ctx.fillStyle = old ? INK : '#4a4036'; ctx.globalAlpha = .85; ctx.fill(); ctx.globalAlpha = 1; }
   });
 
+  /* ---- tour route and highlighted building ---- */
+  if (o.route && o.route.length > 1) {
+    ctx.beginPath(); o.route.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]));
+    ctx.lineJoin = 'round'; ctx.lineWidth = px(3.4); ctx.strokeStyle = old ? '#8b2e1f' : '#d9422b'; ctx.setLineDash([px(9), px(6)]); ctx.globalAlpha = .92; ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+  }
+  if (o.hl) { ctx.beginPath(); poly(ctx, o.hl.p, true); ctx.fillStyle = 'rgba(217,66,43,.30)'; ctx.fill(); ctx.lineWidth = px(2.6); ctx.strokeStyle = old ? '#8b2e1f' : '#d9422b'; ctx.stroke(); }
+
   /* ---- labels (screen space) ---- */
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   const z = V.z, col = old ? OLD.label : M.label, halo = old ? OLD.halo : M.halo, riv = old ? INK : M.river;
@@ -300,5 +310,25 @@ function draw(ctx, V, o) {
   }
 }
 
-NM.basemap = { draw, landmarks: LM, ll2m, m2ll, counts: { buildings: BLD.length, landmarkBuildings: LMB.length } };
+
+/* ---------- hit test (tap a building) ---------- */
+let GRID = null;
+function buildGrid() {
+  GRID = {}; const C = 100;
+  BLD.forEach(b => { for (let gx = Math.floor(b.x0 / C); gx <= Math.floor(b.x1 / C); gx++) for (let gy = Math.floor(b.y0 / C); gy <= Math.floor(b.y1 / C); gy++) (GRID[gx + ',' + gy] = GRID[gx + ',' + gy] || []).push(b); });
+}
+function inPoly(p, x, y) { let c = false; const n = p.length / 2; for (let i = 0, j = n - 1; i < n; j = i++) { const xi = p[2 * i], yi = p[2 * i + 1], xj = p[2 * j], yj = p[2 * j + 1]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; }
+function hit(x, y, tol) {
+  if (!GRID) buildGrid();
+  const list = GRID[Math.floor(x / 100) + ',' + Math.floor(y / 100)] || []; let best = null, bd = 1e9;
+  for (const b of list) {
+    if (x < b.x0 - tol || x > b.x1 + tol || y < b.y0 - tol || y > b.y1 + tol) continue;
+    if (inPoly(b.p, x, y)) return b;
+    const d = Math.hypot(b.cx - x, b.cy - y); if (tol > 0 && d < bd && d < tol + Math.sqrt(b.ar) / 2) { bd = d; best = b; }
+  }
+  return best;
+}
+const isRubble = (b) => !!(b.f & 1) ? b.r < 0.9 : b.r < Math.max(0.08, 0.62 * Math.exp(-b.dd / 2300));
+
+NM.basemap = { draw, hit, isRubble, buildings: BLD, landmarks: LM, ll2m, m2ll, counts: { buildings: BLD.length, landmarkBuildings: LMB.length } };
 })(window);
