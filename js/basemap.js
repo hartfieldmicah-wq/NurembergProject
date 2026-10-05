@@ -139,14 +139,11 @@ function patterns(ctx, dpr) {
   };
   return PAT;
 }
-/* patFill: set pattern transform so it tiles stably world-anchored (not screen-anchored).
-   Without the translation offset the pattern resets to (0,0) every frame → shimmers on pan. */
+/* patFill: pattern space -> world metres. The canvas world transform does the rest, so the
+   pattern origin is fixed to world (0,0) and moves exactly with the map. */
 function patFill(ctx, pat, V) {
   const s = 1 / (V.dpr * V.k);
-  const tw = s * 160 * V.dpr;   // pattern tile width in CSS pixels
-  const ox = (V.w / 2 - V.x * V.k) % tw;
-  const oy = (V.h / 2 + V.y * V.k) % tw;
-  try { pat.setTransform(new DOMMatrix([s, 0, 0, s, ox, oy])); } catch (_) {}
+  try { pat.setTransform(new DOMMatrix([s, 0, 0, s, 0, 0])); } catch (_) {}
   return pat;
 }
 
@@ -159,100 +156,84 @@ function rubblePoly(b) {
   return (b.rp = q);
 }
 
-let RUB = null;
-function rubblePattern(ctx, dpr, old) {
-  if (RUB && RUB.dpr === dpr && RUB.old === old) return RUB.p;
-  const S = 160, c = document.createElement('canvas'); c.width = c.height = Math.round(S * dpr); const g = c.getContext('2d'); g.scale(dpr, dpr);
-  let s = 17; const r = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
-  g.clearRect(0, 0, S, S);
-  const rep = (fn) => { for (const ox of [-S, 0, S]) for (const oy of [-S, 0, S]) { g.save(); g.translate(ox, oy); fn(); g.restore(); } };
-
-  /* base coat — uneven ash and dust ground */
-  g.fillStyle = old ? '#b0a07a' : '#b4a48a'; g.fillRect(0, 0, S, S);
-  for (let i = 0; i < 40; i++) {
-    const x = r() * S, y = r() * S, rad = 6 + r() * 28, dk = r() < .6;
-    rep(() => { const gr = g.createRadialGradient(x, y, 0, x, y, rad);
-      gr.addColorStop(0, dk ? (old ? 'rgba(45,36,28,.38)' : 'rgba(55,42,30,.42)') : 'rgba(230,218,190,.30)');
-      gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(x - rad, y - rad, rad * 2, rad * 2); });
+/* ---------- rubble debris as real world-space geometry ----------
+   Every brick, slab and beam is a polygon in world metres, generated once per building from a
+   fixed seed and drawn with the same transform as the buildings. It is part of the map itself:
+   no bitmap tiles, no patterns, no offscreen layers, so nothing can slide or shimmer. */
+function inPoly(p, x, y) {
+  let c = false; for (let i = 0, j = p.length - 2; i < p.length; j = i, i += 2) {
+    const xi = p[i], yi = p[i + 1], xj = p[j], yj = p[j + 1];
+    if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; }
+  return c;
+}
+const NCLS = 7;   // 0 dark ash patch, 1 light dust patch, 2 concrete slab, 3 brick, 4 dark brick, 5 charred timber, 6 plaster
+const DCOL = {
+  m: ['rgba(58,44,32,.30)', 'rgba(238,226,200,.34)', '#958c7d', '#a8573e', '#86402f', '#2c2722', '#d6cbad'],
+  o: ['rgba(43,41,35,.26)', 'rgba(250,244,222,.34)', '#8a8070', '#8a5a42', '#6a3e2c', '#2b2923', '#cfc3a2']
+};
+function genDebris(b, P, dens) {
+  let s = (b.i * 2654435761 + 97) >>> 0; const r = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
+  let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+  for (let i = 0; i < P.length; i += 2) { x0 = Math.min(x0, P[i]); x1 = Math.max(x1, P[i]); y0 = Math.min(y0, P[i + 1]); y1 = Math.max(y1, P[i + 1]); }
+  const ar = Math.max(4, b.ar), buck = []; for (let c = 0; c < NCLS; c++) buck.push([]);
+  const put = (cls, cx, cy, ang, hw, hh, nv, jag) => {          // rotated polygon, kept only if fully inside the footprint
+    const ca = Math.cos(ang), sa = Math.sin(ang), v = [];
+    for (let k = 0; k < nv; k++) {
+      let lx, ly; if (nv === 4) { lx = (k === 0 || k === 3) ? -hw : hw; ly = k < 2 ? -hh : hh; }
+      else { const t = k / nv * 6.2832; lx = Math.cos(t) * hw; ly = Math.sin(t) * hh; }
+      const j = 1 + (r() - 0.5) * jag; lx *= j; ly *= j;
+      const x = cx + lx * ca - ly * sa, y = cy + lx * sa + ly * ca; if (!inPoly(P, x, y)) return false; v.push(x, y);
+    }
+    buck[cls].push(v); return true;
+  };
+  const scatter = (n, fn) => { for (let t = 0, got = 0; got < n && t < n * 4; t++) { const x = x0 + (x1 - x0) * r(), y = y0 + (y1 - y0) * r(); if (inPoly(P, x, y) && fn(x, y)) got++; } };
+  /* coarse: ash/dust patches and broken floor slabs (visible from mid zoom) */
+  scatter(Math.min(40, Math.max(2, Math.round(ar / 45 * dens))), (x, y) => put(r() < .55 ? 0 : 1, x, y, r() * 3.14, 1.2 + r() * 2.6, 1 + r() * 2, 7, .5));
+  scatter(Math.min(30, Math.max(1, Math.round(ar / 70 * dens))), (x, y) => put(2, x, y, r() * 3.14, .8 + r() * 1.8, .5 + r() * 1.1, 4, .25));
+  const coarse = buck.map(a => a.length);
+  /* fine: bricks, plaster lumps, charred beams (close zoom) */
+  scatter(Math.min(450, Math.max(4, Math.round(ar * .32 * dens))), (x, y) => { const q = r(); const c = q < .32 ? 3 : q < .52 ? 4 : q < .7 ? 6 : q < .84 ? 2 : 5;
+    return put(c, x, y, r() * 3.14, .14 + r() * .32, .07 + r() * .16, 4, .3); });
+  scatter(Math.min(40, Math.max(1, Math.round(ar / 45 * dens))), (x, y) => put(5, x, y, r() * 3.14, .9 + r() * 2.2, .09 + r() * .08, 4, .1));
+  /* pack: per class, coarse shapes first then fine, flat Float32Array + vertex counts */
+  const out = []; for (let c = 0; c < NCLS; c++) {
+    const L = buck[c]; let n = 0; for (const v of L) n += v.length;
+    const pts = new Float32Array(n), nv = new Uint8Array(L.length); let o = 0;
+    L.forEach((v, i) => { pts.set(v, o); o += v.length; nv[i] = v.length / 2; });
+    out.push({ pts, nv, nc: coarse[c] });
   }
-
-  /* large concrete floor slabs — flat gray with cracked edges */
-  for (let i = 0; i < 8; i++) {
-    const x = r() * S, y = r() * S, w = 6 + r() * 18, h = 5 + r() * 12, a = r() * 3.1416;
-    rep(() => { g.save(); g.translate(x, y); g.rotate(a); g.globalAlpha = .6 + r() * .3;
-      g.fillStyle = old ? '#8a8070' : '#9a9282'; g.fillRect(-w/2, -h/2, w, h);
-      g.strokeStyle = old ? '#6a6050' : '#6e6458'; g.lineWidth = .5; g.strokeRect(-w/2, -h/2, w, h);
-      /* crack lines */
-      g.strokeStyle = old ? 'rgba(40,32,24,.5)' : 'rgba(50,40,30,.55)'; g.lineWidth = .4;
-      g.beginPath(); g.moveTo(-w/2 + r()*w, -h/2); g.lineTo(-w/2 + r()*w, h/2); g.stroke();
-      g.restore(); });
+  return out;
+}
+function debrisOf(b, ruined) { const key = ruined ? 'dR' : 'dG'; return b[key] || (b[key] = genDebris(b, ruined ? rubblePoly(b) : b.p, ruined ? 1 : .55)); }
+/* fill/stroke many polygons in batches of 60 (huge single paths are very slow to build in Chromium) */
+function batchPoly(ctx, list, get, paint) {
+  for (let i = 0; i < list.length; i += 60) { ctx.beginPath(); const e = Math.min(list.length, i + 60); for (let j = i; j < e; j++) get(list[j]); paint(); }
+}
+/* one colour at a time; the path is flushed every ~60 pieces (only between buildings, so the
+   result is identical whatever is on screen) because huge single paths are very slow to build.
+   Coarse patches/slabs from mid zoom, fine bricks/beams only once they are at least ~1px. */
+function drawDebris(ctx, list, ruined, mpp, old, alpha) {
+  if (!list.length || mpp >= 2.4) return;
+  const fine = mpp < 0.6, col = old ? DCOL.o : DCOL.m, D = list.map(b => debrisOf(b, ruined));
+  ctx.globalAlpha = alpha;
+  for (let c = 0; c < NCLS; c++) {
+    ctx.fillStyle = col[c]; ctx.beginPath(); let inPath = 0;
+    for (const d of D) { const e = d[c], cnt = fine ? e.nv.length : e.nc; let o = 0;
+      for (let i = 0; i < cnt; i++) { const n = e.nv[i]; ctx.moveTo(e.pts[o], e.pts[o + 1]); for (let k = 1; k < n; k++) ctx.lineTo(e.pts[o + 2 * k], e.pts[o + 2 * k + 1]); ctx.closePath(); o += 2 * n; }
+      inPath += cnt; if (inPath >= 60) { ctx.fill(); ctx.beginPath(); inPath = 0; } }
+    if (inPath) ctx.fill();
   }
-
-  /* exposed brick patches — clusters of small red/terracotta rectangles */
-  const brickCols = old ? ['#7a4a35', '#8a5240', '#6a3e2c', '#9a6048'] : ['#9a4e38', '#b35840', '#8a3e2e', '#c06848'];
-  for (let patch = 0; patch < 5; patch++) {
-    const px0 = r() * S, py0 = r() * S, cols = Math.round(2 + r() * 4), rows = Math.round(2 + r() * 3);
-    const bw = 3.2 + r() * 1.4, bh = 1.6 + r() * 0.8, gap = 0.4, ang = (r() - 0.5) * 0.5;
-    rep(() => { g.save(); g.translate(px0, py0); g.rotate(ang);
-      for (let row = 0; row < rows; row++) for (let col = 0; col < cols; col++) {
-        const ox = (col + (row % 2) * 0.5) * (bw + gap), oy = row * (bh + gap);
-        g.globalAlpha = .65 + r() * .3; g.fillStyle = brickCols[(r() * brickCols.length) | 0];
-        g.fillRect(ox, oy, bw - .3, bh - .2);
-        g.strokeStyle = 'rgba(30,20,14,.4)'; g.lineWidth = .3; g.strokeRect(ox, oy, bw - .3, bh - .2);
-      } g.restore(); });
-  }
-
-  /* scattered individual bricks, plaster chunks, tile shards */
-  const debrisCols = old
-    ? ['#7a5a42', '#3a332c', '#c4b89c', '#6e6050', '#9a6848', '#4a4038', '#a09070']
-    : ['#9a5840', '#2f2a26', '#d4c8a8', '#6e6050', '#b46848', '#4a4038', '#baa882'];
-  for (let i = 0; i < 480; i++) {
-    const x = r() * S, y = r() * S, w = 0.6 + r() * 3.2, h = 0.4 + r() * 1.8, a = r() * 3.1416;
-    const col = debrisCols[(r() * debrisCols.length) | 0];
-    rep(() => { g.save(); g.translate(x, y); g.rotate(a); g.fillStyle = col; g.globalAlpha = .5 + r() * .45; g.fillRect(-w/2, -h/2, w, h); g.restore(); });
-  }
-
-  /* charred timber beams — long dark strokes at various angles */
-  for (let i = 0; i < 22; i++) {
-    const x = r() * S, y = r() * S, L = 5 + r() * 14, a = r() * 3.1416, thick = .8 + r() * 1.4;
-    const charred = r() < .65;
-    rep(() => { g.save(); g.globalAlpha = .7 + r() * .28;
-      g.strokeStyle = charred ? (old ? '#1e1a16' : '#221e18') : (old ? '#4e4438' : '#5a4e40');
-      g.lineWidth = thick; g.lineCap = 'butt'; g.beginPath(); g.moveTo(x, y);
-      g.lineTo(x + Math.cos(a) * L, y + Math.sin(a) * L); g.stroke();
-      /* cross-beam sometimes */
-      if (r() < .3) { const a2 = a + 0.4 + r() * 0.8; g.beginPath(); g.moveTo(x + Math.cos(a)*L*.3, y + Math.sin(a)*L*.3); g.lineTo(x + Math.cos(a)*L*.3 + Math.cos(a2)*L*.4, y + Math.sin(a)*L*.3 + Math.sin(a2)*L*.4); g.stroke(); }
-      g.restore(); });
-  }
-
-  /* bent rebar / twisted metal */
-  for (let i = 0; i < 12; i++) {
-    const x = r() * S, y = r() * S, a = r() * 3.1416, L = 3 + r() * 8;
-    rep(() => { g.save(); g.globalAlpha = .8; g.strokeStyle = old ? '#3a3428' : '#4a4038'; g.lineWidth = .4 + r() * .5;
-      g.beginPath(); g.moveTo(x, y); const mx = x + Math.cos(a)*L*.5 + (r()-.5)*3, my = y + Math.sin(a)*L*.5 + (r()-.5)*3;
-      g.quadraticCurveTo(mx, my, x + Math.cos(a)*L, y + Math.sin(a)*L); g.stroke(); g.restore(); });
-  }
-
-  /* dust / ash highlights on top */
-  for (let i = 0; i < 320; i++) {
-    const x = r() * S, y = r() * S;
-    rep(() => { g.fillStyle = 'rgba(245,238,218,' + (.08 + r() * .22) + ')'; g.fillRect(x, y, 1 + r(), 1); });
-  }
-
-  /* fine grit / powder texture */
-  for (let i = 0; i < 800; i++) {
-    const x = r() * S, y = r() * S, dk = r() < .4;
-    rep(() => { g.fillStyle = dk ? 'rgba(30,22,16,' + (.04+r()*.12) + ')' : 'rgba(240,230,210,' + (.03+r()*.10) + ')'; g.fillRect(x, y, 1, 1); });
-  }
-
-  RUB = { dpr, old, p: ctx.createPattern(c, 'repeat') }; return RUB.p;
+  ctx.globalAlpha = 1;
 }
 /* jagged remains of outer walls standing amid the debris */
 function wallStubs(ctx, list, mpp, k, old, d3, share) {
   const px = (n) => n / k, wall = old ? '#bfb08b' : '#b9a994', edge = old ? INK : '#5d5144';
+  ctx.fillStyle = wall; ctx.lineWidth = px(.8); ctx.lineJoin = 'round'; ctx.strokeStyle = edge;
+  const flush = () => { ctx.fill(); ctx.stroke(); ctx.beginPath(); };
   ctx.beginPath(); const tops = [];
   let n = 0;
   for (const b of list) {
+    if (n && n % 30 === 0) flush();
     const p = b.p, m = p.length;
     for (let i = 0; i < m; i += 2) {
       const j = (i + 2) % m, h0 = hash(n * 31 + i);
@@ -270,7 +251,7 @@ function wallStubs(ctx, list, mpp, k, old, d3, share) {
     }
     n++;
   }
-  ctx.fillStyle = wall; ctx.fill(); ctx.lineWidth = px(.8); ctx.lineJoin = 'round'; ctx.strokeStyle = edge; ctx.stroke();
+  flush();
 }
 /* a georeferenced historic plan, drawn in world metres under the current transform */
 function drawOvl(ctx, ov) {
@@ -382,30 +363,26 @@ function draw(ctx, V, o) {
   const fine = mpp < 9;
   const drawRubble = () => {
     if (!R.length && !G.length) return;
-    const rp = rubblePattern(ctx, dpr, old), a = Math.min(1, 0.35 + destr);
-    const base = old ? OLD.rubble : M.rubble;
-    /* half-collapsed buildings: standing outline with debris spilling over */
+    const a = Math.min(1, 0.35 + destr), base = old ? OLD.rubble : M.rubble;
+    const fp = (b) => poly(ctx, b.p, true), rpoly = (b) => poly(ctx, rubblePoly(b), true);
+    /* half-collapsed buildings: standing outline, debris spilling inside */
     if (G.length) {
-      ctx.beginPath(); for (const b of G) poly(ctx, b.p, true);
-      ctx.globalAlpha = 0.5 * Math.min(1, destr + 0.2); ctx.fillStyle = base; ctx.fill();
-      ctx.globalAlpha = 1; ctx.fillStyle = patFill(ctx, rp, V); ctx.fill();
-      ctx.lineWidth = px(.9); ctx.strokeStyle = old ? INK : M.rubbleEdge; ctx.setLineDash([px(2), px(2)]); ctx.stroke(); ctx.setLineDash([]);
+      const ga = Math.min(1, destr + 0.2);
+      ctx.fillStyle = base; ctx.globalAlpha = 0.6 * ga; batchPoly(ctx, G, fp, () => ctx.fill()); ctx.globalAlpha = 1;
+      drawDebris(ctx, G, false, mpp, old, ga);
+      ctx.lineWidth = px(.9); ctx.strokeStyle = old ? INK : M.rubbleEdge; ctx.setLineDash([px(2), px(2)]); batchPoly(ctx, G, fp, () => ctx.stroke()); ctx.setLineDash([]);
       if (mpp < 3.5) wallStubs(ctx, G, mpp, k, old, o.d3 !== false, 0.5);
     }
     if (!R.length) return;
-    /* solid base coat first, then pattern on top at full alpha so texture is always visible */
-    ctx.beginPath(); for (const b of R) poly(ctx, rubblePoly(b), true);
-    ctx.globalAlpha = a; ctx.fillStyle = base; ctx.fill();
-    ctx.globalAlpha = 1; ctx.fillStyle = patFill(ctx, rp, V); ctx.fill();
-    ctx.lineJoin = 'round'; ctx.lineWidth = px(old ? 1.1 : 1.6); ctx.strokeStyle = old ? INK : 'rgba(70,56,42,.55)'; ctx.stroke();
+    /* total loss: rubble heap = solid ground + lighter crest + debris pieces, all in world metres */
+    ctx.globalAlpha = a; ctx.fillStyle = base; batchPoly(ctx, R, rpoly, () => ctx.fill());
     if (mpp < 3.2) {
-      /* lighter crest on each heap */
-      ctx.beginPath(); for (const b of R) { const q = rubblePoly(b); ctx.moveTo(b.cx + (q[0] - b.cx) * .55, b.cy + (q[1] - b.cy) * .55); for (let n = 2; n < q.length; n += 2) ctx.lineTo(b.cx + (q[n] - b.cx) * .55, b.cy + (q[n + 1] - b.cy) * .55); ctx.closePath(); }
-      ctx.fillStyle = old ? 'rgba(255,250,225,.22)' : 'rgba(255,245,225,.20)'; ctx.fill();
-      /* scattered bricks, timbers and plaster lumps */
-      ctx.beginPath(); let i = 0; for (const b of R) { for (let j = 0; j < 6; j++) { const h1 = hash(i * 7 + j), h2 = hash(i * 13 + j + 3), x = b.x0 + (b.x1 - b.x0) * h1, y = b.y0 + (b.y1 - b.y0) * h2, s = 1.1 + hash(i * 5 + j * 3) * 2.2, an = h1 * 6.28, c = Math.cos(an) * s, d = Math.sin(an) * s * .45; ctx.moveTo(x - c, y - d); ctx.lineTo(x + c, y + d); ctx.lineTo(x + c - d * .8, y + d + c * .35); ctx.lineTo(x - c - d * .8, y - d + c * .35); ctx.closePath(); } i++; }
-      ctx.fillStyle = old ? INK : M.rubbleDot; ctx.globalAlpha = .75; ctx.fill(); ctx.globalAlpha = 1;
+      ctx.fillStyle = old ? 'rgba(255,250,225,.20)' : 'rgba(255,245,225,.18)';
+      batchPoly(ctx, R, (b) => { const q = rubblePoly(b); ctx.moveTo(b.cx + (q[0] - b.cx) * .55, b.cy + (q[1] - b.cy) * .55); for (let n = 2; n < q.length; n += 2) ctx.lineTo(b.cx + (q[n] - b.cx) * .55, b.cy + (q[n + 1] - b.cy) * .55); ctx.closePath(); }, () => ctx.fill());
     }
+    ctx.globalAlpha = 1;
+    drawDebris(ctx, R, true, mpp, old, a);
+    ctx.lineJoin = 'round'; ctx.lineWidth = px(old ? 1.1 : 1.6); ctx.strokeStyle = old ? INK : 'rgba(70,56,42,.55)'; ctx.globalAlpha = a; batchPoly(ctx, R, rpoly, () => ctx.stroke()); ctx.globalAlpha = 1;
     if (mpp < 3.5) wallStubs(ctx, R, mpp, k, old, o.d3 !== false, 1);
   };
   const obl = o.d3 !== false && (old ? (is1648 || mpp < 2.2) : mpp < 2.2);
@@ -417,14 +394,14 @@ function draw(ctx, V, o) {
     const T = A.concat(C); T.sort((a, b) => b.cy - a.cy);
     drawOblique(ctx, T, V, PT, lo, mpp, pal);
   } else {
+    const fp = (b) => poly(ctx, b.p, true);
     if (A.length) {
-      ctx.beginPath(); for (const b of A) poly(ctx, b.p, true);
-      if (old) { ctx.fillStyle = bFill; ctx.fill(); if (mpp < 7) { ctx.fillStyle = patFill(ctx, PT.hatch, V); ctx.fill(); } ctx.lineWidth = px(mpp < 7 ? .9 : .5); ctx.strokeStyle = INK; ctx.stroke(); }
-      else { ctx.fillStyle = M.bld; ctx.fill(); if (fine) { ctx.lineWidth = px(.8); ctx.strokeStyle = M.bldEdge; ctx.stroke(); } }
+      if (old) { const hp = mpp < 7 ? patFill(ctx, PT.hatch, V) : null; ctx.lineWidth = px(mpp < 7 ? .9 : .5); ctx.strokeStyle = INK;
+        batchPoly(ctx, A, fp, () => { ctx.fillStyle = bFill; ctx.fill(); if (hp) { ctx.fillStyle = hp; ctx.fill(); } ctx.stroke(); }); }
+      else { ctx.fillStyle = M.bld; ctx.lineWidth = px(.8); ctx.strokeStyle = M.bldEdge; batchPoly(ctx, A, fp, () => { ctx.fill(); if (fine) ctx.stroke(); }); }
     }
     if (C.length) {
-      ctx.beginPath(); for (const b of C) poly(ctx, b.p, true);
-      ctx.fillStyle = old ? '#6f5a3f' : M.church; ctx.fill(); ctx.lineWidth = px(.9); ctx.strokeStyle = old ? INK : '#b39e90'; ctx.stroke();
+      ctx.fillStyle = old ? '#6f5a3f' : M.church; ctx.lineWidth = px(.9); ctx.strokeStyle = old ? INK : '#b39e90'; batchPoly(ctx, C, fp, () => { ctx.fill(); ctx.stroke(); });
     }
     drawRubble();
   }
@@ -446,8 +423,9 @@ function draw(ctx, V, o) {
     if (obl && !ruin) { if (st === 'damaged') { ctx.beginPath(); l.bl.forEach((b, i) => { const n = Math.min(14, 3 + Math.round(Math.sqrt(b.ar) / 3)); const off = Math.max(b.h * 0.95, mpp * 3.2); for (let j = 0; j < n; j++) { const h1 = hash(li * 977 + i * 31 + j), h2 = hash(li * 313 + i * 17 + j + 9), x = b.x0 + (b.x1 - b.x0) * h1, y = b.y0 + (b.y1 - b.y0) * h2 + off * .7, s = 1.6 + h1 * 2.2; ctx.moveTo(x, y); ctx.lineTo(x + s, y + s * .4); ctx.lineTo(x + s * .2, y + s); ctx.closePath(); } }); ctx.fillStyle = old ? INK : '#4a4036'; ctx.globalAlpha = .85; ctx.fill(); ctx.globalAlpha = 1; } return; }
     ctx.beginPath(); l.bl.forEach(b => poly(ctx, ruin ? rubblePoly(b) : b.p, true));
     ctx.fillStyle = ruin ? (old ? OLD.rubble : M.rubble) : col; ctx.globalAlpha = ruin ? 1 : (old ? .88 : .9); ctx.fill(); ctx.globalAlpha = 1;
+    if (ruin) { drawDebris(ctx, l.bl, true, mpp, old, 1); ctx.beginPath(); l.bl.forEach(b => poly(ctx, rubblePoly(b), true)); }
     ctx.lineWidth = px(ruin ? 1.5 : 1.1); ctx.strokeStyle = ruin ? col : (old ? INK : 'rgba(0,0,0,.4)'); if (ruin) ctx.setLineDash([px(4), px(3)]); ctx.stroke(); ctx.setLineDash([]);
-    if (ruin || st === 'damaged') { ctx.beginPath(); let i = 0; for (const b of l.bl) { const n = Math.min(26, 4 + Math.round(Math.sqrt(b.ar) / 2)); for (let j = 0; j < n; j++) { const h1 = hash(li * 977 + i * 31 + j), h2 = hash(li * 313 + i * 17 + j + 9), x = b.x0 + (b.x1 - b.x0) * h1, y = b.y0 + (b.y1 - b.y0) * h2, s = 1.6 + h1 * 2.2; ctx.moveTo(x, y); ctx.lineTo(x + s, y + s * .4); ctx.lineTo(x + s * .2, y + s); ctx.closePath(); } i++; } ctx.fillStyle = old ? INK : '#4a4036'; ctx.globalAlpha = .85; ctx.fill(); ctx.globalAlpha = 1; }
+    if (st === 'damaged') { ctx.beginPath(); let i = 0; for (const b of l.bl) { const n = Math.min(26, 4 + Math.round(Math.sqrt(b.ar) / 2)); for (let j = 0; j < n; j++) { const h1 = hash(li * 977 + i * 31 + j), h2 = hash(li * 313 + i * 17 + j + 9), x = b.x0 + (b.x1 - b.x0) * h1, y = b.y0 + (b.y1 - b.y0) * h2, s = 1.6 + h1 * 2.2; ctx.moveTo(x, y); ctx.lineTo(x + s, y + s * .4); ctx.lineTo(x + s * .2, y + s); ctx.closePath(); } i++; } ctx.fillStyle = old ? INK : '#4a4036'; ctx.globalAlpha = .85; ctx.fill(); ctx.globalAlpha = 1; }
   });
 
   /* ---- tour route and highlighted building ---- */
