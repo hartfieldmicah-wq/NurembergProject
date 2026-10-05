@@ -1,5 +1,5 @@
 /* Service worker: precaches the whole app so it works fully offline. Bump VERSION when you change any file. */
-const VERSION = '1.9.0';
+const VERSION = '1.10.0';
 const CACHE = 'nuremberg-map-' + VERSION;
 const CORE = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
@@ -25,8 +25,8 @@ self.addEventListener('fetch', (e) => {
   e.respondWith((async () => {
     const cache = await caches.open(CACHE);
     const cached = await cache.match(req, { ignoreSearch: true }) || (req.mode === 'navigate' ? await cache.match('index.html') : null);
-    const refresh = fetch(req).then((res) => { if (res && res.ok) cache.put(req, res.clone()); return res; }).catch(() => null);
-    if (cached) { e.waitUntil(refresh); return cached; }   // cache first, refresh in background
-    return (await refresh) || new Response('Offline', { status: 503 });
+    const fresh = await fetch(req, { cache: 'no-cache' }).then((res) => { if (res && res.ok) cache.put(req, res.clone()); return res; }).catch(() => null);
+    if (fresh && fresh.ok) return fresh;                    // network first: updates show up on the next reload
+    return cached || fresh || new Response('Offline', { status: 503 });
   })());
 });
