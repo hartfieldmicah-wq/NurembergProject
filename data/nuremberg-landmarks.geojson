@@ -1,0 +1,835 @@
+{
+  "type": "FeatureCollection",
+  "name": "nuremberg-landmarks",
+  "description": "Historic landmarks of Nuremberg with era-by-era status for web map and Unity AR overlay",
+  "generated": "2026-10-04",
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+    }
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.07539,
+          49.45808,
+          0.0
+        ]
+      },
+      "properties": {
+        "id": "kaiserburg",
+        "name": "Kaiserburg (Imperial Castle)",
+        "category": "castle",
+        "categoryLabel": "Castle & Gates",
+        "icon": "castle",
+        "built": "from c. 1050",
+        "blurb": "The sandstone fortress above the old town, seat of Holy Roman Emperors.",
+        "wikiTitle": "Nuremberg Castle",
+        "wikiUrl": "https://en.wikipedia.org/wiki/Nuremberg_Castle",
+        "eras": {
+          "1648": {
+            "status": "standing",
+            "description": "Still the emperor's castle, high above a walled Free Imperial City."
+          },
+          "1939": {
+            "status": "standing",
+            "description": "A national monument. Rock cellars under the castle hill sheltered art treasures."
+          },
+          "1945": {
+            "status": "ruin",
+            "description": "Badly damaged; roofs and interiors of several buildings destroyed."
+          },
+          "now": {
+            "status": "rebuilt",
+            "description": "Rebuilt and open as a museum. Climb the Sinwell Tower for the view."
+          }
+        },
+        "facts": [
+          "The Golden Bull of 1356 required each new German king to hold his first imperial diet in Nuremberg.",
+          "Nuremberg first appears in written records in 1050.",
+          "The imperial crown jewels were kept in the city from 1424 until 1796."
+        ],
+        "ar": {
+          "labelHeight": 20.0,
+          "visibilityRadius": 500.0,
+          "priority": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.07377,
+          49.45715,
+          0.0
+        ]
+      },
+      "properties": {
+        "id": "durer",
+        "name": "Albrecht Dürer's House",
+        "category": "culture",
+        "categoryLabel": "Museums & Memorials",
+        "icon": "house",
+        "built": "c. 1420",
+        "blurb": "Home and workshop of Germany's most famous Renaissance artist.",
+        "wikiTitle": "Albrecht Dürer's House",
+        "wikiUrl": "https://en.wikipedia.org/wiki/Albrecht_Dürer's_House",
+        "eras": {
+          "1648": {
+            "status": "standing",
+            "description": "A half-timbered house on the slope below the castle."
+          },
+          "1939": {
+            "status": "standing",
+            "description": "A museum since 1871, one of the most photographed houses in the city."
+          },
+          "1945": {
+            "status": "damaged",
+            "description": "Heavily damaged in October 1944; rebuilt by 1949."
+          },
+          "now": {
+            "status": "rebuilt",
+            "description": "Restored and open to visitors with furnished rooms and a graphics workshop."
+          }
+        },
+        "facts": [
+          "Dürer lived and worked here from 1509 until his death in 1528.",
+          "He is buried in the Johannisfriedhof, grave 649."
+        ],
+        "ar": {
+          "labelHeight": 20.0,
+          "visibilityRadius": 500.0,
+          "priority": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.07704,
+          49.45423,
+          0.0
+        ]
+      },
+      "properties": {
+        "id": "hauptmarkt",
+        "name": "Hauptmarkt & Schöner Brunnen",
+        "category": "civic",
+        "categoryLabel": "Civic & Bridges",
+        "icon": "fountain",
+        "built": "square after 1349; fountain 1385-96",
+        "blurb": "The central market square and its 19-metre Gothic 'Beautiful Fountain'.",
+        "wikiTitle": "Hauptmarkt, Nuremberg",
+        "wikiUrl": "https://en.wikipedia.org/wiki/Hauptmarkt,_Nuremberg",
+        "eras": {
+          "1648": {
+            "status": "standing",
+            "description": "The Gothic Schöner Brunnen already stood at its edge."
+          },
+          "1939": {
+            "status": "standing",
+            "description": "Renamed 'Adolf-Hitler-Platz' in 1933 and used for Nazi rallies."
+          },
+          "1945": {
+            "status": "damaged",
+            "description": "Houses around the square reduced to rubble; the fountain survived inside a concrete casing."
+          },
+          "now": {
+            "status": "rebuilt",
+            "description": "Rebuilt; hosts the Christkindlesmarkt every Advent."
+          }
+        },
+        "facts": [
+          "The fountain is about 19 m tall and decorated with some 40 figures.",
+          "Turning the seamless ring in its iron fence is said to bring luck."
+        ],
+        "ar": {
+          "labelHeight": 20.0,
+          "visibilityRadius": 500.0,
+          "priority": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.0782,
+          49.45405,
+          0.0
+        ]
+      },
+      "properties": {
+        "id": "frauenkirche",
+        "name": "Frauenkirche (Church of Our Lady)",
+        "category": "church",
+        "categoryLabel": "Churches",
+        "icon": "church",
+        "built": "1352-1362",
+        "blurb": "Gothic hall church on the Hauptmarkt, famous for its noon clock show.",
+        "wikiTitle": "Frauenkirche, Nuremberg",
+        "wikiUrl": "https://en.wikipedia.org/wiki/Frauenkirche,_Nuremberg",
+        "eras": {
+          "1648": {
+            "status": "standing",
+            "description": "Built for Emperor Charles IV. The Männleinlaufen clock paraded electors past the emperor at noon."
+          },
+          "1939": {
+            "status": "standing",
+            "description": "A landmark of the Hauptmarkt; the daily clock show drew visitors from all over Germany."
+          },
+          "1945": {
+            "status": "damaged",
+            "description": "Badly damaged by the air raids, with much of the roof and interior lost."
+          },
+          "now": {
+            "status": "rebuilt",
+            "description": "Rebuilt. Every day at noon the Männleinlaufen clock sets seven electors in motion."
+          }
+        },
+        "facts": [
+          "The church stands where the synagogue stood until the 1349 pogrom."
+        ],
+        "ar": {
+          "labelHeight": 20.0,
+          "visibilityRadius": 500.0,
+          "priority": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.07644,
+          49.45528,
+          0.0
+        ]
+      },
+      "properties": {
+        "id": "sebald",
+        "name": "St. Sebaldus Church",
+        "category": "church",
+        "categoryLabel": "Churches",
+        "icon": "church",
+        "built": "c. 1225-1273",
+        "blurb": "The oldest of Nuremberg's great churches, home to the bronze Shrine of St. Sebald.",
+        "wikiTitle": "St. Sebaldus, Nuremberg",
+        "wikiUrl": "https://en.wikipedia.org/wiki/St._Sebaldus,_Nuremberg",
+        "eras": {
+          "1648": {
+            "status": "standing",
+            "description": "A Lutheran parish church holding Peter Vischer's bronze shrine of St. Sebald, finished in 1519."
+          },
+          "1939": {
+            "status": "standing",
+            "description": "One of the twin great churches of the old town."
+          },
+          "1945": {
+            "status": "ruin",
+            "description": "Roof and vaults collapsed in the January 1945 firestorm; only the shell and towers stood."
+          },
+          "now": {
+            "status": "rebuilt",
+            "description": "Rebuilt in the 1950s, with the Vischer shrine back on display."
+          }
+        },
+        "facts": [
+          "The shrine was made by Peter Vischer the Elder and his sons between about 1508 and 1519."
+        ],
+        "ar": {
+          "labelHeight": 20.0,
+          "visibilityRadius": 500.0,
+          "priority": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.07865,
+          49.451,
+          0.0
+        ]
+      },
+      "properties": {
+        "id": "lorenz",
+        "name": "St. Lorenz Church",
+        "category": "church",
+        "categoryLabel": "Churches",
+        "icon": "church",
+        "built": "c. 1250-1477",
+        "blurb": "Twin-towered Gothic hall church with Veit Stoss's hanging 'Angelic Salutation'.",
+        "wikiTitle": "St. Lorenz, Nuremberg",
+        "wikiUrl": "https://en.wikipedia.org/wiki/St._Lorenz,_Nuremberg",
+        "eras": {
+          "1648": {
+            "status": "standing",
+            "description": "Lutheran since 1525. Veit Stoss's carved 'Angelic Salutation' hung in the choir."
+          },
+          "1939": {
+            "status": "standing",
+            "description": "The great church of the southern old town, twin spires visible along the main shopping street."
+          },
+          "1945": {
+            "status": "ruin",
+            "description": "Roof and vaulting destroyed and the church stood open to the sky."
+          },
+          "now": {
+            "status": "rebuilt",
+            "description": "Rebuilt in stages after the war; the Angelic Salutation again hangs in the choir."
+          }
+        },
+        "facts": [
+          "Adam Kraft's tabernacle (1493-96) is about 20 m high."
+        ],
+        "ar": {
+          "labelHeight": 20.0,
+          "visibilityRadius": 500.0,
+          "priority": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.07756,
+          49.45525,
+          0.0
+        ]
+      },
+      "properties": {
+        "id": "rathaus",
+        "name": "Old Town Hall (Altes Rathaus)",
+        "category": "civic",
+        "categoryLabel": "Civic & Bridges",
+        "icon": "hall",
+        "built": "1332; Renaissance wing 1616-22",
+        "blurb": "Gothic and Renaissance town hall with medieval dungeons in its cellars.",
+        "wikiTitle": "Nuremberg Town Hall",
+        "wikiUrl": "https://en.wikipedia.org/wiki/Nuremberg_Town_Hall",
+        "eras": {
+          "1648": {
+            "status": "standing",
+            "description": "Newly extended (1616-22) in Italian Renaissance style. Envoys met here in 1649-50."
+          },
+          "1939": {
+            "status": "standing",
+            "description": "Still the city's historic hall, its Renaissance front facing Rathausplatz."
+          },
+          "1945": {
+            "status": "ruin",
+            "description": "Largely burnt out. The medieval dungeons survived."
+          },
+          "now": {
+            "status": "rebuilt",
+            "description": "Rebuilt after the war. The Lochgefängnisse dungeons can be visited on guided tours."
+          }
+        },
+        "facts": [
+          "The Renaissance wing was designed by Jakob Wolff the Younger."
+        ],
+        "ar": {
+          "labelHeight": 20.0,
+          "visibilityRadius": 500.0,
+          "priority": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.07072,
+          49.45045,
+          0.0
+        ]
+      },
+      "properties": {
+        "id": "weisserturm",
+        "name": "Weißer Turm (White Tower)",
+        "category": "castle",
+        "categoryLabel": "Castle & Gates",
+        "icon": "tower",
+        "built": "13th-14th century",
+        "blurb": "A medieval gate tower at the western end of the main shopping streets.",
+        "wikiTitle": "Weißer Turm Nuremberg",
+        "wikiUrl": "https://en.wikipedia.org/wiki/Weißer_Turm_Nuremberg",
+        "eras": {
+          "1648": {
+            "status": "standing",
+            "description": "A gate tower on the western approach to the inner city."
+          },
+          "1939": {
+            "status": "standing",
+            "description": "A gate tower on the edge of the old town with busy shopping streets leading toward it."
+          },
+          "1945": {
+            "status": "damaged",
+            "description": "Damaged in the air raids that flattened much of the quarter around it."
+          },
+          "now": {
+            "status": "rebuilt",
+            "description": "Restored; still the western gateway to the pedestrian shopping streets."
+          }
+        },
+        "facts": [
+          "It was a gate in the older inner ring of the city walls, with origins in the 13th century."
+        ],
+        "ar": {
+          "labelHeight": 20.0,
+          "visibilityRadius": 500.0,
+          "priority": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.07963,
+          49.45301,
+          0.0
+        ]
+      },
+      "properties": {
+        "id": "spital",
+        "name": "Heilig-Geist-Spital",
+        "category": "civic",
+        "categoryLabel": "Civic & Bridges",
+        "icon": "bridge",
+        "built": "founded 1330s",
+        "blurb": "A hospital built across the river Pegnitz, once guardian of the imperial crown jewels.",
+        "wikiTitle": "Heilig-Geist-Spital Nuremberg",
+        "wikiUrl": "https://en.wikipedia.org/wiki/Heilig-Geist-Spital_Nuremberg",
+        "eras": {
+          "1648": {
+            "status": "standing",
+            "description": "A charitable hospital arching across the river. Its church held the empire's crown jewels from 1424."
+          },
+          "1939": {
+            "status": "standing",
+            "description": "A familiar riverside sight in the old town."
+          },
+          "1945": {
+            "status": "ruin",
+            "description": "Burned out in the raids; only parts of the structure remained."
+          },
+          "now": {
+            "status": "rebuilt",
+            "description": "Rebuilt; its arches again span the Pegnitz."
+          }
+        },
+        "facts": [
+          "In 1796 the crown jewels were evacuated ahead of French troops; today they are in Vienna."
+        ],
+        "ar": {
+          "labelHeight": 20.0,
+          "visibilityRadius": 500.0,
+          "priority": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.07306,
+          49.45311,
+          0.0
+        ]
+      },
+      "properties": {
+        "id": "henkersteg",
+        "name": "Henkersteg & Weinstadel",
+        "category": "civic",
+        "categoryLabel": "Civic & Bridges",
+        "icon": "bridge",
+        "built": "1457; rebuilt 1595",
+        "blurb": "The covered 'Hangman's Bridge' beside the half-timbered Weinstadel.",
+        "wikiTitle": "Henkersteg",
+        "wikiUrl": "https://en.wikipedia.org/wiki/Henkersteg",
+        "eras": {
+          "1648": {
+            "status": "standing",
+            "description": "A covered wooden footbridge beside the old wine warehouse, named for the executioner's tower nearby."
+          },
+          "1939": {
+            "status": "standing",
+            "description": "A postcard favourite: half-timbered houses, covered bridge and river."
+          },
+          "1945": {
+            "status": "ruin",
+            "description": "Severely damaged in the 1945 bombing."
+          },
+          "now": {
+            "status": "rebuilt",
+            "description": "Reconstructed in 1954 and again one of the city's classic views."
+          }
+        },
+        "facts": [
+          "The bridge is named for the hangman, whose quarters stood nearby."
+        ],
+        "ar": {
+          "labelHeight": 20.0,
+          "visibilityRadius": 500.0,
+          "priority": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.08196,
+          49.44784,
+          0.0
+        ]
+      },
+      "properties": {
+        "id": "koenigstor",
+        "name": "Königstor & Handwerkerhof",
+        "category": "castle",
+        "categoryLabel": "Castle & Gates",
+        "icon": "tower",
+        "built": "gate c. 1400; Handwerkerhof 1971",
+        "blurb": "The round gate tower at the railway-station entrance to the old town.",
+        "wikiTitle": "Königstor Nuremberg",
+        "wikiUrl": "https://en.wikipedia.org/wiki/Königstor_Nuremberg",
+        "eras": {
+          "1648": {
+            "status": "standing",
+            "description": "A massive round gate tower in the wall, with moat and bastions around it."
+          },
+          "1939": {
+            "status": "standing",
+            "description": "The gateway between the railway station and the old town."
+          },
+          "1945": {
+            "status": "damaged",
+            "description": "The gate tower was damaged but survived."
+          },
+          "now": {
+            "status": "rebuilt",
+            "description": "Restored. The Handwerkerhof, a craft-market village built in 1971, welcomes visitors."
+          }
+        },
+        "facts": [
+          "The Handwerkerhof is a modern creation from 1971, not an original medieval quarter."
+        ],
+        "ar": {
+          "labelHeight": 20.0,
+          "visibilityRadius": 500.0,
+          "priority": 1
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.08187,
+          49.44619,
+          0.0
+        ]
+      },
+      "properties": {
+        "id": "hbf",
+        "name": "Hauptbahnhof (Central Station)",
+        "category": "transport",
+        "categoryLabel": "Transport",
+        "icon": "train",
+        "built": "1906",
+        "blurb": "Hub of Germany's first railway city, where the Ludwigsbahn began in 1835.",
+        "wikiTitle": "Nürnberg Hauptbahnhof",
+        "wikiUrl": "https://en.wikipedia.org/wiki/Nürnberg_Hauptbahnhof",
+        "eras": {
+          "1648": {
+            "status": "absent",
+            "description": "Not built yet. Beyond the walls there were only moat, gardens and fields."
+          },
+          "1939": {
+            "status": "standing",
+            "description": "A major rail hub; special trains brought huge crowds to the Nazi Party rallies."
+          },
+          "1945": {
+            "status": "damaged",
+            "description": "Railway targets were bombed repeatedly; the station and yards around it were badly damaged."
+          },
+          "now": {
+            "status": "rebuilt",
+            "description": "Rebuilt and modernised. The DB Museum next door tells the story of German railways."
+          }
+        },
+        "facts": [
+          "Germany's first public steam railway ran between Nuremberg and Fürth in 1835."
+        ],
+        "ar": {
+          "labelHeight": 20.0,
+          "visibilityRadius": 500.0,
+          "priority": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.0757,
+          49.44809,
+          0.0
+        ]
+      },
+      "properties": {
+        "id": "gnm",
+        "name": "Germanisches Nationalmuseum",
+        "category": "culture",
+        "categoryLabel": "Museums & Memorials",
+        "icon": "museum",
+        "built": "founded 1852",
+        "blurb": "Germany's largest museum of cultural history, in a former Carthusian monastery.",
+        "wikiTitle": "Germanisches Nationalmuseum",
+        "wikiUrl": "https://en.wikipedia.org/wiki/Germanisches_Nationalmuseum",
+        "eras": {
+          "1648": {
+            "status": "standing",
+            "description": "The Carthusian monastery, founded in 1380, still stood here after the monks left."
+          },
+          "1939": {
+            "status": "standing",
+            "description": "Germany's largest cultural-history museum, built around the old monastery."
+          },
+          "1945": {
+            "status": "damaged",
+            "description": "Heavily damaged by bombs, though much of the collection had been moved for safekeeping."
+          },
+          "now": {
+            "status": "rebuilt",
+            "description": "Rebuilt and expanded. See Martin Behaim's 1492 'Erdapfel', the oldest surviving terrestrial globe."
+          }
+        },
+        "facts": [
+          "The Way of Human Rights (1993) is a row of 30 columns inscribed with the articles of the Universal Declaration of Human Rights."
+        ],
+        "ar": {
+          "labelHeight": 20.0,
+          "visibilityRadius": 500.0,
+          "priority": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.04586,
+          49.45488,
+          0.0
+        ]
+      },
+      "properties": {
+        "id": "justiz",
+        "name": "Palace of Justice & Nuremberg Trials",
+        "category": "trials",
+        "categoryLabel": "Nazi Era & Trials",
+        "icon": "scales",
+        "built": "1909-1916",
+        "blurb": "Courtroom 600, where the Nazi leaders were tried in 1945-46.",
+        "wikiTitle": "Nuremberg trials",
+        "wikiUrl": "https://en.wikipedia.org/wiki/Nuremberg_trials",
+        "eras": {
+          "1648": {
+            "status": "absent",
+            "description": "Not built yet. Open land outside the city, well west of the walls."
+          },
+          "1939": {
+            "status": "standing",
+            "description": "Built in the early 1900s as the city's main courthouse."
+          },
+          "1945": {
+            "status": "damaged",
+            "description": "Damaged but largely usable; chosen by the Allies for the International Military Tribunal."
+          },
+          "now": {
+            "status": "standing",
+            "description": "Still a working court. The Memorium Nuremberg Trials museum opened in 2010."
+          }
+        },
+        "facts": [
+          "The main trial ran from 20 November 1945 to 1 October 1946, with 22 defendants judged.",
+          "Twelve were sentenced to death, seven to prison terms, and three were acquitted."
+        ],
+        "ar": {
+          "labelHeight": 20.0,
+          "visibilityRadius": 500.0,
+          "priority": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.12336,
+          49.42989,
+          0.0
+        ]
+      },
+      "properties": {
+        "id": "zeppelin",
+        "name": "Zeppelin Field & Tribune",
+        "category": "trials",
+        "categoryLabel": "Nazi Era & Trials",
+        "icon": "stadium",
+        "built": "1935-1937",
+        "blurb": "The Nazi Party's main parade ground, designed by Albert Speer.",
+        "wikiTitle": "Zeppelinfeld",
+        "wikiUrl": "https://en.wikipedia.org/wiki/Zeppelinfeld",
+        "eras": {
+          "1648": {
+            "status": "absent",
+            "description": "Not built yet. Forest, ponds and farmland southeast of the city."
+          },
+          "1939": {
+            "status": "standing",
+            "description": "The stage for the Nazi Party rallies (1933-38): vast choreographed parades before a stone grandstand."
+          },
+          "1945": {
+            "status": "damaged",
+            "description": "On 22 April 1945 US Army engineers blew up the giant swastika on the tribune."
+          },
+          "now": {
+            "status": "standing",
+            "description": "A protected monument. The city works on how best to preserve and explain the site."
+          }
+        },
+        "facts": [
+          "The tribune was inspired by the Pergamon Altar in Berlin."
+        ],
+        "ar": {
+          "labelHeight": 20.0,
+          "visibilityRadius": 500.0,
+          "priority": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.11292,
+          49.43264,
+          0.0
+        ]
+      },
+      "properties": {
+        "id": "kongress",
+        "name": "Congress Hall & Documentation Center",
+        "category": "trials",
+        "categoryLabel": "Nazi Era & Trials",
+        "icon": "stadium",
+        "built": "begun 1935 (unfinished)",
+        "blurb": "The Nazis' unfinished colossal congress hall, now a history museum.",
+        "wikiTitle": "Congress Hall (Nuremberg)",
+        "wikiUrl": "https://en.wikipedia.org/wiki/Congress_Hall_(Nuremberg)",
+        "eras": {
+          "1648": {
+            "status": "absent",
+            "description": "Not built yet. Only the shore of the Dutzendteich pond lay here."
+          },
+          "1939": {
+            "status": "standing",
+            "description": "Construction began in 1935 for some 50,000 seats but stalled with the outbreak of war."
+          },
+          "1945": {
+            "status": "standing",
+            "description": "Never completed and left as a shell."
+          },
+          "now": {
+            "status": "standing",
+            "description": "The northern wing houses the Documentation Center Nazi Party Rally Grounds (opened 2001)."
+          }
+        },
+        "facts": [
+          "The hall was never roofed; its brick and granite shell stands as a monument."
+        ],
+        "ar": {
+          "labelHeight": 20.0,
+          "visibilityRadius": 500.0,
+          "priority": 2
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11.06125,
+          49.45858,
+          0.0
+        ]
+      },
+      "properties": {
+        "id": "johannis",
+        "name": "Johannisfriedhof (St. John's Cemetery)",
+        "category": "culture",
+        "categoryLabel": "Museums & Memorials",
+        "icon": "cross",
+        "built": "founded 1234",
+        "blurb": "Medieval cemetery with the graves of Albrecht Dürer and other Nuremberg greats.",
+        "wikiTitle": "Johannisfriedhof Nuremberg",
+        "wikiUrl": "https://en.wikipedia.org/wiki/Johannisfriedhof_Nuremberg",
+        "eras": {
+          "1648": {
+            "status": "standing",
+            "description": "Famous for flat sandstone graves with bronze epitaphs. Dürer had been buried here in 1528."
+          },
+          "1939": {
+            "status": "standing",
+            "description": "A tree-shaded cemetery just outside the old town and a place of pilgrimage for Dürer admirers."
+          },
+          "1945": {
+            "status": "damaged",
+            "description": "Air raids caused some damage but the cemetery largely survived."
+          },
+          "now": {
+            "status": "standing",
+            "description": "Still in use and open to visitors; look for Dürer's grave (no. 649)."
+          }
+        },
+        "facts": [
+          "Veit Stoss is buried here too."
+        ],
+        "ar": {
+          "labelHeight": 20.0,
+          "visibilityRadius": 500.0,
+          "priority": 2
+        }
+      }
+    }
+  ]
+}
