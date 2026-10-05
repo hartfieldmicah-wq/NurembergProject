@@ -75,17 +75,18 @@ function prep3d(b) {
   let mn = 1e9, mx = -1e9; for (let i = 0; i < n; i++) { const d = (p[2 * i] - b.cx) * bx + (p[2 * i + 1] - b.cy) * by; if (d < mn) mn = d; if (d > mx) mx = d; }
   b.rdx = bx; b.rdy = by; b.r0 = mn * 0.78; b.r1 = mx * 0.78;
 }
-function drawOblique(ctx, T, V, PT, lo, mpp) {
-  const k = V.k, w = 0.8 / k; ctx.lineWidth = w; ctx.strokeStyle = INK; ctx.lineJoin = 'round';
-  const hatch = (!lo && mpp < 6) ? patFill(ctx, PT.hatch, V) : null;
+function shade(hex, f) { const n = parseInt(hex.slice(1), 16); const c = (v) => Math.max(0, Math.min(255, Math.round(v * f))); return 'rgb(' + c(n >> 16) + ',' + c((n >> 8) & 255) + ',' + c(n & 255) + ')'; }
+function drawOblique(ctx, T, V, PT, lo, mpp, pal) {
+  const k = V.k, w = 0.8 / k; ctx.lineWidth = w; ctx.strokeStyle = pal.ink; ctx.lineJoin = 'round';
+  const hatch = (pal.hatch && !lo && mpp < 6) ? patFill(ctx, PT.hatch, V) : null;
   for (const b of T) {
-    prep3d(b); const off = Math.max(b.h * 0.6, mpp * 2.2), p = b.p, n = p.length / 2, ch = b.f & 2;
+    prep3d(b); const lc = b.lc, off = Math.max(b.h * (lc ? 0.95 : 0.6), mpp * (lc ? 3.2 : 2.2)), p = b.p, n = p.length / 2, ch = b.f & 2;
     ctx.beginPath();
     for (let i = 0; i < n; i++) { const j = (i + 1) % n, x = p[2 * i], y = p[2 * i + 1], x2 = p[2 * j], y2 = p[2 * j + 1], dx = x2 - x;
       if (b.ccw ? dx > 0 : dx < 0) { ctx.moveTo(x, y); ctx.lineTo(x2, y2); ctx.lineTo(x2, y2 + off); ctx.lineTo(x, y + off); ctx.closePath(); } }
-    ctx.fillStyle = ch ? '#b4a27c' : '#d8cfae'; ctx.fill(); ctx.stroke();
+    ctx.fillStyle = lc ? shade(lc, .62) : ch ? pal.cwall : pal.wall; ctx.fill(); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(p[0], p[1] + off); for (let i = 1; i < n; i++) ctx.lineTo(p[2 * i], p[2 * i + 1] + off); ctx.closePath();
-    ctx.fillStyle = ch ? '#85734f' : OLD.paper; ctx.fill(); if (hatch) { ctx.fillStyle = hatch; ctx.fill(); } ctx.stroke();
+    ctx.fillStyle = lc ? lc : ch ? pal.croof : pal.roof; ctx.fill(); if (hatch && !lc) { ctx.fillStyle = hatch; ctx.fill(); } ctx.stroke();
     if (!lo && mpp < 3.5) { ctx.beginPath(); ctx.moveTo(b.cx + b.rdx * b.r0, b.cy + b.rdy * b.r0 + off); ctx.lineTo(b.cx + b.rdx * b.r1, b.cy + b.rdy * b.r1 + off); ctx.stroke(); }
   }
 }
@@ -253,10 +254,14 @@ function draw(ctx, V, o) {
     if (!lo) { ctx.lineWidth = px(.9); ctx.strokeStyle = old ? INK : M.rubbleEdge; if (mpp < 2.2) ctx.setLineDash([px(3), px(2)]); ctx.stroke(); ctx.setLineDash([]); }
     if (mpp < 3.2 && !lo) { ctx.beginPath(); let i = 0; for (const b of R) { for (let j = 0; j < 4; j++) { const h1 = hash(i * 7 + j), h2 = hash(i * 13 + j + 3), x = b.x0 + (b.x1 - b.x0) * h1, y = b.y0 + (b.y1 - b.y0) * h2, s = 1.4 + h1 * 1.6; ctx.moveTo(x, y); ctx.lineTo(x + s, y + s * .4); ctx.lineTo(x + s * .2, y + s); ctx.closePath(); } i++; } ctx.fillStyle = old ? INK : M.rubbleDot; ctx.globalAlpha = .8; ctx.fill(); ctx.globalAlpha = 1; }
   };
-  if (old && (is1648 || mpp < 2.2)) {
+  const obl = o.d3 !== false && (old ? (is1648 || mpp < 2.2) : mpp < 2.2);
+  const pal = old ? { ink: INK, roof: OLD.paper, wall: '#d8cfae', croof: '#85734f', cwall: '#b4a27c', hatch: true } : { ink: M.bldEdge, roof: M.bld, wall: shade(M.bld, .86), croof: M.church, cwall: shade(M.church, .8), hatch: false };
+  for (const b of LMB) b.lc = null;
+  if (obl) LM.forEach((l, li) => { const st = stOf[li]; if (st === 'absent' || st === 'ruin') return; const c = old ? '#8b2e1f' : D.CATS[l.cat].color; l.bl.forEach(b => { if (is1648 && !(b.f & 1)) return; b.lc = c; (b.f & 2 ? C : A).push(b); }); });
+  if (obl) {
     drawRubble();
     const T = A.concat(C); T.sort((a, b) => b.cy - a.cy);
-    drawOblique(ctx, T, V, PT, lo, mpp);
+    drawOblique(ctx, T, V, PT, lo, mpp, pal);
   } else {
     if (A.length) {
       ctx.beginPath(); for (const b of A) poly(ctx, b.p, true);
@@ -282,6 +287,7 @@ function draw(ctx, V, o) {
     const col = old ? '#8b2e1f' : D.CATS[l.cat].color;
     if (!l.bl.length) { ctx.beginPath(); ctx.arc(l.m[0], l.m[1], Math.max(14, px(9)), 0, 6.283); ctx.fillStyle = col; ctx.globalAlpha = .22; ctx.fill(); ctx.globalAlpha = 1; ctx.lineWidth = px(1.4); ctx.strokeStyle = col; if (st === 'ruin') ctx.setLineDash([px(4), px(3)]); ctx.stroke(); ctx.setLineDash([]); return; }
     const ruin = st === 'ruin';
+    if (obl && !ruin) { if (st === 'damaged') { ctx.beginPath(); l.bl.forEach((b, i) => { const n = Math.min(14, 3 + Math.round(Math.sqrt(b.ar) / 3)); const off = Math.max(b.h * 0.95, mpp * 3.2); for (let j = 0; j < n; j++) { const h1 = hash(li * 977 + i * 31 + j), h2 = hash(li * 313 + i * 17 + j + 9), x = b.x0 + (b.x1 - b.x0) * h1, y = b.y0 + (b.y1 - b.y0) * h2 + off * .7, s = 1.6 + h1 * 2.2; ctx.moveTo(x, y); ctx.lineTo(x + s, y + s * .4); ctx.lineTo(x + s * .2, y + s); ctx.closePath(); } }); ctx.fillStyle = old ? INK : '#4a4036'; ctx.globalAlpha = .85; ctx.fill(); ctx.globalAlpha = 1; } return; }
     ctx.beginPath(); l.bl.forEach(b => poly(ctx, ruin ? rubblePoly(b) : b.p, true));
     ctx.fillStyle = ruin ? (old ? OLD.rubble : M.rubble) : col; ctx.globalAlpha = ruin ? 1 : (old ? .88 : .9); ctx.fill(); ctx.globalAlpha = 1;
     ctx.lineWidth = px(ruin ? 1.5 : 1.1); ctx.strokeStyle = ruin ? col : (old ? INK : 'rgba(0,0,0,.4)'); if (ruin) ctx.setLineDash([px(4), px(3)]); ctx.stroke(); ctx.setLineDash([]);
@@ -291,7 +297,12 @@ function draw(ctx, V, o) {
   /* ---- tour route and highlighted building ---- */
   if (o.route && o.route.length > 1) {
     ctx.beginPath(); o.route.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]));
-    ctx.lineJoin = 'round'; ctx.lineWidth = px(3.4); ctx.strokeStyle = old ? '#8b2e1f' : '#d9422b'; ctx.setLineDash([px(9), px(6)]); ctx.globalAlpha = .92; ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+    ctx.lineJoin = 'round'; ctx.lineWidth = px(2.6); ctx.strokeStyle = old ? '#8b2e1f' : '#d9422b'; ctx.setLineDash([px(8), px(6)]); ctx.globalAlpha = .6; ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+  }
+  if (o.leg && o.leg.length > 1) {
+    ctx.beginPath(); o.leg.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]));
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.lineWidth = px(6.5); ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.stroke();
+    ctx.lineWidth = px(3.6); ctx.strokeStyle = old ? '#8b2e1f' : '#d9422b'; ctx.stroke(); ctx.lineCap = 'butt';
   }
   if (o.hl) { ctx.beginPath(); poly(ctx, o.hl.p, true); ctx.fillStyle = 'rgba(217,66,43,.30)'; ctx.fill(); ctx.lineWidth = px(2.6); ctx.strokeStyle = old ? '#8b2e1f' : '#d9422b'; ctx.stroke(); }
 

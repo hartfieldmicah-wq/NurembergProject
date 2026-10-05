@@ -7,7 +7,7 @@ const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt
 const store = { get(k, d) { try { return localStorage.getItem(k) || d; } catch (_) { return d; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (_) {} } };
 
 const I = NM.i18n, t = I.t;
-const state = { style: store.get('nm_style', 'old'), era: store.get('nm_era', 'now'), sel: null, bsel: null, hl: null, route: null, tour: null, year: null, loc: null, sim: false, follow: false, destr: 0, destrTarget: 0, cat: 'all' };
+const state = { style: store.get('nm_style', 'old'), era: store.get('nm_era', 'now'), sel: null, bsel: null, d3: store.get('nm_d3', '1') !== '0', hl: null, route: null, leg: null, tmode: store.get('nm_tmode', 'foot'), tour: null, year: null, loc: null, sim: false, follow: false, destr: 0, destrTarget: 0, cat: 'all' };
 if (!D.ERAS.some(e => e.id === state.era)) state.era = 'now';
 const LMS = B.landmarks;
 const byId = {}; LMS.forEach(l => byId[l.id] = l);
@@ -31,7 +31,7 @@ const statusOf = (l, era) => entryFor(l, era)[0];
 /* ---------- map ---------- */
 const mapEl = $('#map');
 const view = new NM.MapView(mapEl, $('#canvas'), {
-  draw: (ctx, V) => { V.mpp; B.draw(ctx, V, { style: state.style, era: state.era, destr: state.destr, statusOf: (l) => statusOf(l), route: state.route, hl: state.hl }); }
+  draw: (ctx, V) => { V.mpp; B.draw(ctx, V, { style: state.style, era: state.era, destr: state.destr, statusOf: (l) => statusOf(l), route: state.route, leg: state.leg, d3: state.d3, hl: state.hl }); }
 });
 function fitHome() {
   const z = view.zoomForSize(2300, 2000, 20, 190);
@@ -139,7 +139,7 @@ const ANCHOR = { '1648': 1648, '1939': 1939, '1945': 1945, now: 2025 };
 function eraForYear(y) { return y <= 1800 ? '1648' : y < 1945 ? '1939' : y < 1950 ? '1945' : 'now'; }
 function caption() { const e = D.ERAS.find(x => x.id === state.era); $('#eraCaption').textContent = (state.year != null ? state.year : I.eraYear(e)) + ' · ' + I.eraName(e); }
 function setEra(id, quiet, keepYear) {
-  if (!keepYear) { state.year = null; const r = $('#tRange'); if (r) { r.value = ANCHOR[id]; syncTime(); } }
+  if (!keepYear) { state.year = null; const r = $('#tRange'); if (r) { r.value = year2pos(ANCHOR[id]); syncTime(); } }
   state.era = id; store.set('nm_era', id);
   document.body.className = document.body.className.replace(/era-\S+/, 'era-' + id);
   erasEl.querySelectorAll('button').forEach(b => { const on = b.dataset.era === id; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
@@ -189,6 +189,13 @@ const isApple = /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent) && 'ontou
 const sheet = $('#sheet'), sheetBody = $('#sheetBody');
 const hostOf = (u) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (_) { return u; } };
 function renderOpenSheet() { if (state.sel) renderSheet(); else if (state.bsel) renderBuilding(); }
+/* ---- historic and modern photos (Wikimedia Commons, free licences; cached for offline use once seen) ---- */
+function photoList(id) { const a = (NM.photos && NM.photos[id]) || []; return a.slice().sort((x, y) => (x.k === 'h' ? 0 : 1) - (y.k === 'h' ? 0 : 1)); }
+const photoUrl = (p) => NM.photoBase + p.p;
+function photoHtml(l) {
+  const a = photoList(l.id); if (!a.length) return '';
+  return '<div class="photos">' + a.map(p => '<figure><img src="' + esc(photoUrl(p)) + '" alt="' + esc(I.L(l).name + ' – ' + p.d) + '" crossorigin="anonymous" loading="lazy" decoding="async"><figcaption><b>' + esc(p.k === 'h' ? t('ph_hist') : t('ph_now')) + ' · ' + esc(p.d) + '</b> · ' + esc(p.a) + ' · ' + esc(p.l) + ' · <a href="https://commons.wikimedia.org/wiki/File:' + encodeURIComponent(p.f.replace(/ /g, '_')) + '" target="_blank" rel="noopener">Wikimedia Commons</a></figcaption></figure>').join('') + '</div>';
+}
 function renderSheet() {
   const l = byId[state.sel]; if (!l) return;
   const Lc = I.L(l), e = entryFor(l), st = e[0], S = D.STATUS[st], era = D.ERAS.find(x => x.id === state.era), cat = D.CATS[l.cat];
@@ -204,7 +211,7 @@ function renderSheet() {
     '<span class="chip" style="--c:' + cat.color + '">' + esc(I.cat(l.cat)) + '</span>' +
     '<h2>' + esc(Lc.name) + '</h2><p class="sub">' + esc(Lc.blurb) + ' <span>(' + esc(Lc.built) + ')</span></p>' +
     '<div class="stat" style="--sc:' + S.color + '"><span class="dot"></span><b>' + esc(badge || I.status(st)) + '</b><span class="en">· ' + esc(state.year != null ? state.year : I.eraYear(era)) + ' ' + (era.id === 'now' && state.year == null ? '' : esc(I.eraName(era))) + '</span></div>' +
-    '<p class="txt">' + esc(text) + '</p>' +
+    '<p class="txt">' + esc(text) + '</p>' + photoHtml(l) +
     '<h3>' + esc(t('eras_h')) + '</h3><ul class="tl">' + D.ERAS.map(x => {
       const ee = l.eras[x.id], ss = D.STATUS[ee[0]];
       return '<li data-era="' + x.id + '" class="' + (x.id === state.era ? 'on' : '') + '" style="--sc:' + ss.color + '"><span class="dot"></span><span class="yr">' + esc(I.eraYear(x)) + '</span><span class="lb">' + esc(Lc.badge(x.id) || I.status(ee[0])) + '</span></li>';
@@ -214,6 +221,7 @@ function renderSheet() {
     '<a class="btn2 alt" href="' + wk + '" target="_blank" rel="noopener">' + esc(t('read_more')) + '</a></div>' +
     (src.length ? '<h3>' + esc(t('sources_h')) + '</h3><ul class="srcs">' + src.map(u => '<li><a href="' + esc(u) + '" target="_blank" rel="noopener">' + esc(hostOf(u)) + '</a></li>').join('') + '</ul>' : '');
   sheetBody.querySelectorAll('.tl li').forEach(li => li.addEventListener('click', () => setEra(li.dataset.era)));
+  sheetBody.querySelectorAll('.photos img').forEach(im => { im.addEventListener('error', () => { const f = im.closest('figure'); if (f) f.remove(); }); });
 }
 /* ---- any building: address / year / type from OpenStreetMap tags, plus an era note ---- */
 let TAGMAP = null;
@@ -373,9 +381,23 @@ function renderAbout() {
     '<p>' + esc(t('about_pins_p')) + '</p>' +
     '<h3>' + esc(t('about_loc')) + '</h3><p>' + esc(t('about_loc_p')) + '</p>' +
     '<h3>' + esc(t('about_inst')) + '</h3><ul><li>' + t('about_ios') + '</li><li>' + t('about_and') + '</li><li>' + esc(t('about_off')) + ' <span id="offlineState"></span></li></ul>' +
+    '<h3>' + esc(t('ph_h')) + '</h3><p>' + esc(t('ph_p')) + '</p><p><button type="button" class="btn2" id="phLoad">' + esc(t('ph_btn')) + '</button> <span id="phState"></span></p>' +
     '<h3>' + esc(t('about_map')) + '</h3><p>' + esc(t('about_map_p')) + '</p>' +
-    '<p class="mt">' + esc(t('v_label')) + ' ' + (window.NM_VERSION || '1.3.0') + '</p>';
-  checkOffline();
+    '<p class="mt">' + esc(t('v_label')) + ' ' + (window.NM_VERSION || '1.4.0') + '</p>';
+  checkOffline(); $('#phLoad').addEventListener('click', preloadPhotos);
+}
+async function preloadPhotos() {
+  const all = []; Object.keys(NM.photos || {}).forEach(k => NM.photos[k].forEach(p => all.push(photoUrl(p)))); const st = $('#phState'), btn = $('#phLoad');
+  if (!('caches' in window)) { st.textContent = t('ph_nocache'); return; }
+  if (!confirm(t('ph_confirm', { n: all.length }))) return;
+  btn.disabled = true; let done = 0, fail = 0;
+  try {
+    const c = await caches.open('nm-photos');
+    for (let i = 0; i < all.length; i += 4) {
+      await Promise.all(all.slice(i, i + 4).map(async (u) => { try { if (!(await c.match(u))) { const r = await fetch(u, { mode: 'cors' }); if (!r.ok) throw 0; await c.put(u, r); } } catch (_) { fail++; } done++; st.textContent = done + ' / ' + all.length; }));
+    }
+  } catch (_) { fail = all.length; }
+  btn.disabled = false; st.textContent = fail ? t('ph_partial', { n: all.length - fail, m: all.length }) : t('ph_done', { n: all.length });
 }
 $('#bInfo').addEventListener('click', () => { renderAbout(); aboutEl.classList.add('open'); aboutEl.setAttribute('aria-hidden', 'false'); });
 function closeAbout() { aboutEl.classList.remove('open'); aboutEl.setAttribute('aria-hidden', 'true'); }
@@ -409,50 +431,72 @@ const TOURS = [
   { id: 'nazi', era: '1939', ids: ['synagoge', 'justiz', 'ss_kaserne', 'luitpold', 'kongress', 'zeppelin', 'dstadion', 'maerzfeld'],
     en: ['Nazi era and the trials', 'The destroyed synagogue, the rally grounds and the courtroom of 1945-46. Long distances: plan to ride.'], de: ['NS-Zeit und die Prozesse', 'Die zerstörte Synagoge, das Reichsparteitagsgelände und der Gerichtssaal von 1945-46. Weite Strecken: besser mit dem Rad oder der Bahn.'] }
 ];
-TOURS.forEach(T => { T.km = 0; for (let k = 1; k < T.ids.length; k++) { const a = byId[T.ids[k - 1]], b = byId[T.ids[k]]; T.km += hav(a.lat, a.lon, b.lat, b.lon) / 1000; } });
+/* real routes along streets (computed from OpenStreetMap footways/roads and bike-legal ways), see js/routes.js */
+const SPEED = { foot: 75, bike: 217 }; /* metres per minute: 4.5 km/h walking, 13 km/h cycling (moving time only, no stops) */
+function decodeLeg(enc) { const o = []; let x = 0, y = 0; for (let i = 0; i < enc.length; i += 2) { x += enc[i]; y += enc[i + 1]; o.push(B.ll2m(x / 1e5, y / 1e5)); } return o; }
+TOURS.forEach(T => {
+  T.legs = {}; T.dist = {}; T.min = {};
+  ['foot', 'bike'].forEach(m => {
+    const r = (NM.routes || {})[m + '_' + T.id] || []; T.legs[m] = r.map((lg, k) => { const a = byId[T.ids[k]].m, b = byId[T.ids[k + 1]].m, pts = decodeLeg(lg[1]); return { m: lg[0], pts: [a].concat(pts, [b]) }; });
+    T.dist[m] = T.legs[m].reduce((s, l) => s + l.m, 0); T.min[m] = Math.round(T.dist[m] / SPEED[m]);
+  });
+});
+function fmtMin(n) { return n >= 60 ? Math.floor(n / 60) + ' h ' + String(n % 60).padStart(2, '0') + ' min' : n + ' min'; }
+function fmtDist(m) { return m >= 1000 ? (m / 1000).toFixed(1) + ' km' : Math.round(m / 10) * 10 + ' m'; }
 const toursEl = $('#tours'), pillEl = $('#tourpill');
 function renderTours() {
   $('#toursH').textContent = t('tours_h');
-  $('#tourItems').innerHTML = TOURS.map(T => { const x = T[I.lang]; return '<li data-t="' + T.id + '"><div class="nm">' + esc(x[0]) + '</div><div class="mt">' + esc(x[1]) + '</div><div class="mt b">' + esc(t('tour_stops', { n: T.ids.length, m: T.km.toFixed(1) })) + ' · ' + esc(I.eraYear(D.ERAS.find(e => e.id === T.era))) + '</div><button type="button" class="btn2">' + esc(t('tour_start')) + '</button></li>'; }).join('');
+  const md = state.tmode;
+  $('#tourItems').innerHTML = '<li class="tm"><button type="button" data-m="foot" class="' + (md === 'foot' ? 'on' : '') + '">' + esc(t('m_foot')) + '</button><button type="button" data-m="bike" class="' + (md === 'bike' ? 'on' : '') + '">' + esc(t('m_bike')) + '</button></li>' +
+    TOURS.map(T => { const x = T[I.lang]; return '<li data-t="' + T.id + '"><div class="nm">' + esc(x[0]) + '</div><div class="mt">' + esc(x[1]) + '</div><div class="mt b">' + esc(t('tour_stops', { n: T.ids.length, m: (T.dist[md] / 1000).toFixed(1) })) + ' · ' + esc(t('tour_time', { t: fmtMin(T.min[md]) })) + ' · ' + esc(I.eraYear(D.ERAS.find(e => e.id === T.era))) + '</div><button type="button" class="btn2">' + esc(t('tour_start')) + '</button></li>'; }).join('') + '<li class="note">' + esc(t('tour_note')) + '</li>';
 }
 function openTours() { renderTours(); closeList(); toursEl.classList.add('open'); toursEl.setAttribute('aria-hidden', 'false'); }
 function closeTours() { toursEl.classList.remove('open'); toursEl.setAttribute('aria-hidden', 'true'); }
 $('#bTour').addEventListener('click', () => toursEl.classList.contains('open') ? closeTours() : openTours());
 $('#toursX').addEventListener('click', closeTours);
-$('#tourItems').addEventListener('click', (e) => { const li = e.target.closest('li[data-t]'); if (li) startTour(li.dataset.t); });
+$('#tourItems').addEventListener('click', (e) => { const mb = e.target.closest('button[data-m]'); if (mb) { setTMode(mb.dataset.m); renderTours(); return; } const li = e.target.closest('li[data-t]'); if (li) startTour(li.dataset.t); });
+function setTMode(m) { state.tmode = m; store.set('nm_tmode', m); if (state.tour) { setRoute(); tourPill(); view.render(); } }
+function setRoute() { const tr = state.tour, L = tr.t.legs[state.tmode]; state.route = [].concat(...L.map(l => l.pts)); const k = Math.min(tr.i, L.length - 1) - (tr.i >= L.length ? 0 : 0); state.leg = tr.i < L.length ? L[tr.i].pts : L[L.length - 1].pts; }
 function startTour(id) {
   const T = TOURS.find(x => x.id === id); if (!T) return;
   closeTours(); closeSheet();
   state.tour = { t: T, i: 0 };
-  state.route = T.ids.map(i => byId[i].m);
+  setRoute();
   setEra(T.era, true);
   tourGo(0);
 }
 function tourGo(i) {
   const tr = state.tour; if (!tr) return;
-  tr.i = Math.max(0, Math.min(tr.t.ids.length - 1, i));
+  tr.i = Math.max(0, Math.min(tr.t.ids.length - 1, i)); setRoute();
   select(tr.t.ids[tr.i], true); tourPill();
 }
 function tourPill() {
   const tr = state.tour; pillEl.hidden = !tr; if (!tr) return;
-  $('#tpLabel').textContent = t('tour_stop', { i: tr.i + 1, n: tr.t.ids.length }) + ' · ' + tr.t[I.lang][0];
+  const L = tr.t.legs[state.tmode], nx = tr.i < L.length ? L[tr.i] : null, md = state.tmode;
+  $('#tpLabel').innerHTML = '<b>' + esc(t('tour_stop', { i: tr.i + 1, n: tr.t.ids.length })) + '</b><small>' + esc(nx ? t('tour_leg', { d: fmtDist(nx.m), t: fmtMin(Math.max(1, Math.round(nx.m / SPEED[md]))) }) : t('tour_last', { d: fmtDist(tr.t.dist[md]), t: fmtMin(tr.t.min[md]) })) + '</small>';
+  $('#tpMode').textContent = t(md === 'foot' ? 'm_foot' : 'm_bike');
   $('#tpPrev').textContent = '‹ ' + t('tour_prev'); $('#tpNext').textContent = t('tour_next') + ' ›'; $('#tpEnd').textContent = t('tour_end');
   $('#tpPrev').disabled = tr.i === 0; $('#tpNext').disabled = tr.i === tr.t.ids.length - 1;
 }
-function endTour() { state.tour = null; state.route = null; pillEl.hidden = true; refreshPins(); view.render(); }
+function endTour() { state.tour = null; state.route = null; state.leg = null; pillEl.hidden = true; refreshPins(); view.render(); }
 $('#tpPrev').addEventListener('click', () => tourGo(state.tour.i - 1));
 $('#tpNext').addEventListener('click', () => tourGo(state.tour.i + 1));
 $('#tpEnd').addEventListener('click', endTour);
+$('#tpMode').addEventListener('click', () => setTMode(state.tmode === 'foot' ? 'bike' : 'foot'));
 
-/* ---------- timeline slider (1450 to today) ---------- */
+/* ---------- timeline slider (1450 to today) ----------
+   The slider position is NOT linear in years: the four map eras sit at fixed marks so the printed labels line up exactly. */
+const TSTOPS = [[1450, 0], [1648, 250], [1939, 640], [1945, 740], [2025, 1000]];
+function pos2year(p) { for (let i = 1; i < TSTOPS.length; i++) if (p <= TSTOPS[i][1]) { const a = TSTOPS[i - 1], b = TSTOPS[i]; return Math.round(a[0] + (b[0] - a[0]) * (p - a[1]) / (b[1] - a[1])); } return 2025; }
+function year2pos(y) { for (let i = 1; i < TSTOPS.length; i++) if (y <= TSTOPS[i][0]) { const a = TSTOPS[i - 1], b = TSTOPS[i]; return Math.round(a[1] + (b[1] - a[1]) * (y - a[0]) / (b[0] - a[0])); } return 1000; }
 const timeEl = $('#timebar'), tRange = $('#tRange');
 function syncTime() {
-  const y = +tRange.value; $('#tYear').textContent = y >= 2025 ? I.eraYear(D.ERAS[3]) : y;
+  const y = pos2year(+tRange.value); $('#tYear').textContent = y >= 2025 ? I.eraYear(D.ERAS[3]) : y;
   const e = D.ERAS.find(x => x.id === eraForYear(y)); $('#tName').textContent = I.eraName(e);
-  const pct = (y - tRange.min) / (tRange.max - tRange.min) * 100; tRange.style.setProperty('--p', pct + '%');
+  const pct = +tRange.value / 10; tRange.style.setProperty('--p', pct + '%');
 }
 tRange.addEventListener('input', () => {
-  const y = +tRange.value; state.year = y >= 2025 ? null : y; syncTime();
+  const y = pos2year(+tRange.value); state.year = y >= 2025 ? null : y; syncTime();
   const era = eraForYear(y);
   if (era !== state.era) setEra(era, true, true);
   else { caption(); refreshPins(); renderList(); renderOpenSheet(); view.render(); }
@@ -467,6 +511,7 @@ function applyStatic() {
   set('#bLocate', 'aria-label', t('locate')); set('#bList', 'aria-label', t('list_aria')); set('#bInfo', 'aria-label', t('info_aria')); set('#bZin', 'aria-label', t('zin')); set('#bZout', 'aria-label', t('zout'));
   set('#bLang', 'aria-label', t('lang_aria')); set('#bTour', 'aria-label', t('tours')); set('#bTime', 'aria-label', t('time_aria'));
   ['#sheetX', '#listX', '#aboutX', '#toursX'].forEach(x => set(x, 'aria-label', t('close')));
+  sync3d();
   $('#bLang').textContent = I.lang === 'de' ? 'EN' : 'DE';
   $('#tTitle').textContent = t('time_h'); $('#tHint').textContent = t('time_hint');
   q('.brand .t1').textContent = I.lang === 'de' ? 'Nürnberg' : 'Nuremberg';
@@ -475,6 +520,9 @@ function setLang(l) {
   I.setLang(l); applyStatic(); eraTexts(); caption(); pinTexts(); renderChips(); renderList(); renderTours(); tourPill(); syncTime(); renderOpenSheet(); if (aboutEl.classList.contains('open')) renderAbout();
   if (state.loc) onLoc(state.loc.lat, state.loc.lon, state.loc.acc, state.loc.heading, state.sim);
 }
+function sync3d() { const b = $('#b3d'); b.textContent = state.d3 ? '3D' : '2D'; b.setAttribute('aria-label', t('d3_aria')); b.classList.toggle('on', state.d3); }
+$('#b3d').addEventListener('click', () => { state.d3 = !state.d3; store.set('nm_d3', state.d3 ? '1' : '0'); sync3d(); view.render(); });
+sync3d();
 $('#bLang').addEventListener('click', () => setLang(I.lang === 'de' ? 'en' : 'de'));
 
 /* ---------- init ---------- */
