@@ -240,14 +240,16 @@ function draw(ctx, V, o) {
   const bFill = old ? OLD.paper : M.bld;
   const A = [], C = [], R = [];
   const pr = (b) => b.f & 1 ? 0.9 : Math.max(0.08, 0.62 * Math.exp(-b.dd / 2300));
+  const G = [];
   for (const b of BLD) {
     if (b.lm >= 0 || !vis(b)) continue;
     if (is1648 && !(b.f & 1)) continue;
-    if (destr > 0 && b.r < pr(b) * destr) { R.push(b); continue; }
+    if (destr > 0) { const c = dmgOf(b); if (c === 2) { if (b.r < destr) { R.push(b); continue; } } else if (c === 1) { if (b.r < destr) { G.push(b); } } else if (c === 3 && b.r < pr(b) * destr) { R.push(b); continue; } }
     ((b.f & 2) ? C : A).push(b);
   }
   const fine = mpp < 9;
   const drawRubble = () => {
+    if (G.length) { ctx.beginPath(); for (const b of G) poly(ctx, b.p, true); ctx.fillStyle = old ? OLD.rubble : M.rubble; ctx.globalAlpha = 0.55 * Math.min(1, destr + 0.2); ctx.fill(); ctx.globalAlpha = 1; if (!lo) { ctx.lineWidth = px(.9); ctx.strokeStyle = old ? INK : M.rubbleEdge; ctx.setLineDash([px(2), px(2)]); ctx.stroke(); ctx.setLineDash([]); } }
     if (!R.length) return;
     ctx.beginPath(); for (const b of R) poly(ctx, rubblePoly(b), true);
     ctx.fillStyle = old ? OLD.rubble : M.rubble; ctx.globalAlpha = Math.min(1, 0.35 + destr); ctx.fill(); ctx.globalAlpha = 1;
@@ -339,7 +341,8 @@ function hit(x, y, tol) {
   }
   return best;
 }
-const isRubble = (b) => !!(b.f & 1) ? b.r < 0.9 : b.r < Math.max(0.08, 0.62 * Math.exp(-b.dd / 2300));
+const dmgOf = (b) => (NM.dmg && NM.dmg[b.i] !== undefined) ? NM.dmg[b.i] : 3;
+const isRubble = (b) => { const c = dmgOf(b); return c === 2 ? true : c === 3 ? (!!(b.f & 1) ? b.r < 0.9 : b.r < Math.max(0.08, 0.62 * Math.exp(-b.dd / 2300))) : false; };
 
-NM.basemap = { draw, hit, isRubble, buildings: BLD, landmarks: LM, ll2m, m2ll, counts: { buildings: BLD.length, landmarkBuildings: LMB.length } };
+NM.basemap = { draw, hit, isRubble, dmgOf, buildings: BLD, landmarks: LM, ll2m, m2ll, counts: { buildings: BLD.length, landmarkBuildings: LMB.length } };
 })(window);

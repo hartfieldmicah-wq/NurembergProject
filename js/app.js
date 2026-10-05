@@ -248,7 +248,7 @@ function renderBuilding() {
   let note;
   if (state.era === '1648') note = (b.f & 1) ? t('snap1648') : t('snap1648_out');
   else if (state.era === '1939') note = t('snap1939');
-  else if (state.era === '1945') note = B.isRubble(b) ? t('snap1945_ruin') : t('snap1945_ok');
+  else if (state.era === '1945') { const c = B.dmgOf(b); note = c === 2 ? t('dmg2') : c === 1 ? t('dmg1') : c === 0 ? t('dmg0') : (B.isRubble(b) ? t('snap1945_ruin') : t('snap1945_ok')); }
   else note = t('snapnow');
   const era = D.ERAS.find(x => x.id === state.era);
   sheetBody.innerHTML =
@@ -383,7 +383,7 @@ function renderAbout() {
     '<h3>' + esc(t('about_inst')) + '</h3><ul><li>' + t('about_ios') + '</li><li>' + t('about_and') + '</li><li>' + esc(t('about_off')) + ' <span id="offlineState"></span></li></ul>' +
     '<h3>' + esc(t('ph_h')) + '</h3><p>' + esc(t('ph_p')) + '</p><p><button type="button" class="btn2" id="phLoad">' + esc(t('ph_btn')) + '</button> <span id="phState"></span></p>' +
     '<h3>' + esc(t('about_map')) + '</h3><p>' + esc(t('about_map_p')) + '</p>' +
-    '<p class="mt">' + esc(t('v_label')) + ' ' + (window.NM_VERSION || '1.4.0') + '</p>';
+    '<p class="mt">' + esc(t('v_label')) + ' ' + (window.NM_VERSION || '1.5.0') + '</p>';
   checkOffline(); $('#phLoad').addEventListener('click', preloadPhotos);
 }
 async function preloadPhotos() {
