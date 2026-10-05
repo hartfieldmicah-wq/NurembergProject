@@ -63,6 +63,7 @@
     <button id="bList" class="fab" type="button" aria-label="List of landmarks"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg></button>
     <button id="bTour" class="fab" type="button" aria-label="Tours"><svg viewBox="0 0 24 24"><circle cx="6" cy="18" r="2.4"/><circle cx="18" cy="6" r="2.4"/><path d="M8 17c6 0 2-9 8-10.2"/></svg></button>
     <button id="bTime" class="fab" type="button" aria-label="Timeline slider"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button>
+    <button id="bMap" class="fab" type="button" aria-label="Old maps"><svg viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 12l9 5 9-5"/><path d="M3 16l9 5 9-5"/></svg></button>
     <button id="b3d" class="fab lang" type="button" aria-label="3D">3D</button>
     <button id="bLang" class="fab lang" type="button" aria-label="Sprache">DE</button>
     <button id="bInfo" class="fab" type="button" aria-label="About and help"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg></button>
@@ -75,6 +76,8 @@
   <div id="tourpill" hidden><button id="tpPrev" type="button">‹</button><span id="tpLabel"></span><button id="tpMode" type="button"></button><button id="tpNext" type="button">›</button><button id="tpEnd" type="button" class="end">×</button></div>
   <div id="timebar"><div class="tr"><b id="tYear">Today</b><span id="tName"></span><small id="tTitle"></small></div><input id="tRange" type="range" min="0" max="1000" step="1" value="1000" aria-label="Year"><div class="tk"><span style="left:0">1450</span><span style="left:25%">1648</span><span style="left:64%">1939</span><span style="left:74%">1945</span><span style="left:100%">2025</span></div><small id="tHint"></small></div>
   <nav id="eras" role="tablist" aria-label="Time period"></nav>
+
+  <section id="mapsP" aria-hidden="true"></section>
 
   <section id="sheet" aria-hidden="true">
     <div class="grab" id="grab"></div>
@@ -112,6 +115,8 @@
 <script src="js/routes.js"></script>
 <script src="js/photos.js"></script>
 <script src="js/damage.js"></script>
+<script src="js/hist.js"></script>
+<script src="js/maps.js"></script>
 <script src="js/basemap.js"></script>
 <script src="js/mapview.js"></script>
 <script src="js/app.js"></script>
