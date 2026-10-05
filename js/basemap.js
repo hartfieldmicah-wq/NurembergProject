@@ -139,7 +139,16 @@ function patterns(ctx, dpr) {
   };
   return PAT;
 }
-function patFill(ctx, pat, V) { try { pat.setTransform(new DOMMatrix().scale(1 / (V.dpr * V.k))); } catch (_) {} return pat; }
+/* patFill: set pattern transform so it tiles stably world-anchored (not screen-anchored).
+   Without the translation offset the pattern resets to (0,0) every frame → shimmers on pan. */
+function patFill(ctx, pat, V) {
+  const s = 1 / (V.dpr * V.k);
+  const tw = s * 160 * V.dpr;   // pattern tile width in CSS pixels
+  const ox = (V.w / 2 - V.x * V.k) % tw;
+  const oy = (V.h / 2 + V.y * V.k) % tw;
+  try { pat.setTransform(new DOMMatrix([s, 0, 0, s, ox, oy])); } catch (_) {}
+  return pat;
+}
 
 /* ---------- drawing helpers ---------- */
 function poly(ctx, p, close) { ctx.moveTo(p[0], p[1]); for (let i = 2; i < p.length; i += 2) ctx.lineTo(p[i], p[i + 1]); if (close) ctx.closePath(); }
@@ -379,16 +388,15 @@ function draw(ctx, V, o) {
     if (G.length) {
       ctx.beginPath(); for (const b of G) poly(ctx, b.p, true);
       ctx.globalAlpha = 0.5 * Math.min(1, destr + 0.2); ctx.fillStyle = base; ctx.fill();
-      ctx.fillStyle = patFill(ctx, rp, V); ctx.fill(); ctx.globalAlpha = 1;
+      ctx.globalAlpha = 1; ctx.fillStyle = patFill(ctx, rp, V); ctx.fill();
       ctx.lineWidth = px(.9); ctx.strokeStyle = old ? INK : M.rubbleEdge; ctx.setLineDash([px(2), px(2)]); ctx.stroke(); ctx.setLineDash([]);
       if (mpp < 3.5) wallStubs(ctx, G, mpp, k, old, o.d3 !== false, 0.5);
     }
     if (!R.length) return;
-    /* ground shadow of the debris heap, then the heap, then the textured surface */
+    /* solid base coat first, then pattern on top at full alpha so texture is always visible */
     ctx.beginPath(); for (const b of R) poly(ctx, rubblePoly(b), true);
     ctx.globalAlpha = a; ctx.fillStyle = base; ctx.fill();
-    ctx.fillStyle = patFill(ctx, rp, V); ctx.fill();
-    ctx.globalAlpha = 1;
+    ctx.globalAlpha = 1; ctx.fillStyle = patFill(ctx, rp, V); ctx.fill();
     ctx.lineJoin = 'round'; ctx.lineWidth = px(old ? 1.1 : 1.6); ctx.strokeStyle = old ? INK : 'rgba(70,56,42,.55)'; ctx.stroke();
     if (mpp < 3.2) {
       /* lighter crest on each heap */
