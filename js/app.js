@@ -31,7 +31,7 @@ const statusOf = (l, era) => entryFor(l, era)[0];
 /* ---------- map ---------- */
 const mapEl = $('#map');
 const view = new NM.MapView(mapEl, $('#canvas'), {
-  draw: (ctx, V) => { V.mpp; B.draw(ctx, V, { style: state.style, era: state.era, destr: state.destr, statusOf: (l) => statusOf(l), route: state.route, leg: state.leg, d3: state.d3, hl: state.hl }); }
+  draw: (ctx, V) => { V.mpp; maybeHD(); B.draw(ctx, V, { ovl: ovlDraw(), style: state.style, era: state.era, destr: state.destr, statusOf: (l) => statusOf(l), route: state.route, leg: state.leg, d3: state.d3, hl: state.hl }); }
 });
 function fitHome() {
   const z = view.zoomForSize(2300, 2000, 20, 190);
@@ -246,8 +246,8 @@ function renderBuilding() {
   if (tg.year) rows.push([t('yr_built'), tg.year]);
   if (typ && typ !== title) rows.push([t('bld_type'), typ]);
   let note;
-  if (state.era === '1648') note = (b.f & 1) ? t('snap1648') : t('snap1648_out');
-  else if (state.era === '1939') note = t('snap1939');
+  if (state.era === '1648') note = (b.f & 1) ? t(B.evidence(b, '1648') === 'plan' ? 'ev1648_plan' : 'ev1648_est') : t('snap1648_out');
+  else if (state.era === '1939') note = t(B.evidence(b, '1939') === 'plan' ? 'ev1939_plan' : 'ev1939_est');
   else if (state.era === '1945') { const c = B.dmgOf(b); note = c === 2 ? t('dmg2') : c === 1 ? t('dmg1') : c === 0 ? t('dmg0') : (B.isRubble(b) ? t('snap1945_ruin') : t('snap1945_ok')); }
   else note = t('snapnow');
   const era = D.ERAS.find(x => x.id === state.era);
@@ -280,7 +280,7 @@ view.on('tap', (e) => {
   hideHint(); closeList(); closeTours();
   if (view.z >= 15.4) {
     const b = B.hit(e.world[0], e.world[1], Math.max(2.5, 7 * view.mpp));
-    if (b && (state.era !== '1648' || (b.f & 1))) {
+    if (b && (b.lm >= 0 ? (state.era !== '1648' || (b.f & 1)) : B.shown(b, state.era))) {
       if (b.lm >= 0) { const lm = LMS[b.lm]; if (statusOf(lm) !== 'absent') { select(lm.id, true); return; } }
       else { showBuilding(b); return; }
     }
@@ -383,7 +383,7 @@ function renderAbout() {
     '<h3>' + esc(t('about_inst')) + '</h3><ul><li>' + t('about_ios') + '</li><li>' + t('about_and') + '</li><li>' + esc(t('about_off')) + ' <span id="offlineState"></span></li></ul>' +
     '<h3>' + esc(t('ph_h')) + '</h3><p>' + esc(t('ph_p')) + '</p><p><button type="button" class="btn2" id="phLoad">' + esc(t('ph_btn')) + '</button> <span id="phState"></span></p>' +
     '<h3>' + esc(t('about_map')) + '</h3><p>' + esc(t('about_map_p')) + '</p>' +
-    '<p class="mt">' + esc(t('v_label')) + ' ' + (window.NM_VERSION || '1.5.0') + '</p>';
+    '<p class="mt">' + esc(t('v_label')) + ' ' + (window.NM_VERSION || '1.6.0') + '</p>';
   checkOffline(); $('#phLoad').addEventListener('click', preloadPhotos);
 }
 async function preloadPhotos() {
@@ -403,7 +403,7 @@ $('#bInfo').addEventListener('click', () => { renderAbout(); aboutEl.classList.a
 function closeAbout() { aboutEl.classList.remove('open'); aboutEl.setAttribute('aria-hidden', 'true'); }
 $('#aboutX').addEventListener('click', closeAbout);
 aboutEl.addEventListener('click', (e) => { if (e.target === aboutEl) closeAbout(); });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeAbout(); closeList(); closeTours(); closeSheet(); } });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeMaps(); closeAbout(); closeList(); closeTours(); closeSheet(); } });
 
 /* ---------- service worker / offline ---------- */
 function checkOffline() {
@@ -501,7 +501,62 @@ tRange.addEventListener('input', () => {
   if (era !== state.era) setEra(era, true, true);
   else { caption(); refreshPins(); renderList(); renderOpenSheet(); view.render(); }
 });
-$('#bTime').addEventListener('click', () => { const on = timeEl.classList.toggle('open'); $('#bTime').classList.toggle('on', on); document.body.classList.toggle('timeopen', on); });
+$('#bTime').addEventListener('click', () => { if (typeof closeMaps === 'function') closeMaps(); const on = timeEl.classList.toggle('open'); $('#bTime').classList.toggle('on', on); document.body.classList.toggle('timeopen', on); });
+
+/* ---------- old maps overlay ---------- */
+const mapsEl = $('#mapsP');
+const OVL = { id: null, alpha: Math.min(1, Math.max(0.1, parseFloat(store.get('nm_ova', '0.7')) || 0.7)), img: null, hd: null, hdBusy: false, hdTried: {}, st: '' };
+const imgP = {};
+function loadImg(url) {
+  if (!imgP[url]) imgP[url] = new Promise((res, rej) => { const im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => res(im); im.onerror = () => { delete imgP[url]; rej(new Error('load')); }; im.src = url; });
+  return imgP[url];
+}
+function curMap() { return OVL.id ? NM.maps.find(x => x.id === OVL.id) : null; }
+function ovlDraw() {
+  const m = curMap(); if (!m) return null; const img = OVL.hd || OVL.img; if (!img) return null;
+  return { img, M: m.M, rw: m.rw, rh: m.rh, clip: m.clip, alpha: OVL.alpha };
+}
+function maybeHD() {
+  const m = curMap(); if (!m || !m.u2 || OVL.hd || OVL.hdBusy || OVL.hdTried[m.id] || !OVL.img || view.mpp > 3.2) return;
+  OVL.hdBusy = true; OVL.hdTried[m.id] = true; OVL.st = 'hd'; mapStatus();
+  loadImg(m.u2).then(im => { if (OVL.id === m.id) { OVL.hd = im; OVL.st = 'sharp'; mapStatus(); view.render(); } OVL.hdBusy = false; }, () => { OVL.hdBusy = false; if (OVL.id === m.id) { OVL.st = 'ok'; mapStatus(); } });
+}
+function selectMap(id) {
+  OVL.id = id || null; OVL.img = null; OVL.hd = null; OVL.hdBusy = false; OVL.st = '';
+  $('#bMap').classList.toggle('on', !!id);
+  const m = curMap();
+  if (m) {
+    OVL.st = 'loading';
+    loadImg(m.u1).then(im => { if (OVL.id === m.id) { OVL.img = im; OVL.st = 'ok'; mapStatus(); view.render(); maybeHD(); } }, () => { if (OVL.id === m.id) { OVL.st = 'err'; mapStatus(); toast(t('maps_err'), null, 6000); } });
+  }
+  renderMaps(); view.render();
+}
+function mapStatus() {
+  const el = $('#mStatus'); if (!el) return;
+  el.textContent = OVL.st === 'loading' ? t('maps_loading') : OVL.st === 'hd' ? t('maps_hd') : OVL.st === 'sharp' ? t('maps_sharp') : OVL.st === 'err' ? t('maps_err') : OVL.st === 'ok' ? t('maps_ok') : '';
+}
+function mapYr(m) { return I.lang === 'de' ? m.yr.replace('c. ', 'um ') : m.yr; }
+function renderMaps() {
+  const m = curMap(), de = I.lang === 'de';
+  mapsEl.innerHTML =
+    '<div class="mh"><b>' + esc(t('maps_h')) + '</b><button class="x" id="mapsX" type="button" aria-label="' + esc(t('close')) + '">&times;</button></div>' +
+    '<div class="mchips"><button type="button" data-m=""' + (m ? '' : ' class="on"') + '>' + esc(t('maps_off')) + '<small>&nbsp;</small></button>' +
+    NM.maps.map(x => '<button type="button" data-m="' + x.id + '"' + (m && m.id === x.id ? ' class="on"' : '') + '>' + esc(mapYr(x)) + '<small>' + esc(de ? x.de : x.en) + '</small></button>').join('') + '</div>' +
+    (m ? '<div class="mn">' + esc(de ? m.de : m.en) + ' · ' + esc(mapYr(m)) + '</div><div class="mnote">' + esc(de ? m.nde : m.nen) + '</div>' +
+      '<div class="mop"><span>' + esc(t('maps_op')) + '</span><input id="mAlpha" type="range" min="10" max="100" step="1" value="' + Math.round(OVL.alpha * 100) + '" aria-label="' + esc(t('maps_op')) + '"><span id="mPct">' + Math.round(OVL.alpha * 100) + '%</span></div>' +
+      '<div class="mst" id="mStatus"></div><div class="msrc">' + esc(t('maps_src')) + ': <a href="' + m.page + '" target="_blank" rel="noopener">' + esc(de ? m.cde : m.cen) + '</a></div>'
+      : '<div class="mnote">' + esc(t('maps_hint')) + '</div>');
+  mapStatus();
+}
+mapsEl.addEventListener('click', (e) => {
+  const bt = e.target.closest('button'); if (!bt) return;
+  if (bt.id === 'mapsX') { closeMaps(); return; }
+  if (bt.dataset.m !== undefined) selectMap(bt.dataset.m);
+});
+mapsEl.addEventListener('input', (e) => { if (e.target.id === 'mAlpha') { OVL.alpha = e.target.value / 100; store.set('nm_ova', String(OVL.alpha)); $('#mPct').textContent = e.target.value + '%'; view.render(); } });
+function openMaps() { renderMaps(); timeEl.classList.remove('open'); $('#bTime').classList.remove('on'); document.body.classList.remove('timeopen'); mapsEl.classList.add('open'); mapsEl.setAttribute('aria-hidden', 'false'); document.body.classList.add('mapsopen'); }
+function closeMaps() { mapsEl.classList.remove('open'); mapsEl.setAttribute('aria-hidden', 'true'); document.body.classList.remove('mapsopen'); }
+$('#bMap').addEventListener('click', () => mapsEl.classList.contains('open') ? closeMaps() : openMaps());
 
 /* ---------- language ---------- */
 function applyStatic() {
@@ -509,7 +564,7 @@ function applyStatic() {
   styleSeg.querySelector('[data-style=modern]').textContent = t('style_modern'); styleSeg.querySelector('[data-style=old]').textContent = t('style_old');
   $('#hint').textContent = t('hint'); q('#list h2').textContent = t('landmarks'); qEl.placeholder = t('search');
   set('#bLocate', 'aria-label', t('locate')); set('#bList', 'aria-label', t('list_aria')); set('#bInfo', 'aria-label', t('info_aria')); set('#bZin', 'aria-label', t('zin')); set('#bZout', 'aria-label', t('zout'));
-  set('#bLang', 'aria-label', t('lang_aria')); set('#bTour', 'aria-label', t('tours')); set('#bTime', 'aria-label', t('time_aria'));
+  set('#bLang', 'aria-label', t('lang_aria')); set('#bTour', 'aria-label', t('tours')); set('#bTime', 'aria-label', t('time_aria')); set('#bMap', 'aria-label', t('maps_h'));
   ['#sheetX', '#listX', '#aboutX', '#toursX'].forEach(x => set(x, 'aria-label', t('close')));
   sync3d();
   $('#bLang').textContent = I.lang === 'de' ? 'EN' : 'DE';
@@ -517,7 +572,7 @@ function applyStatic() {
   q('.brand .t1').textContent = I.lang === 'de' ? 'Nürnberg' : 'Nuremberg';
 }
 function setLang(l) {
-  I.setLang(l); applyStatic(); eraTexts(); caption(); pinTexts(); renderChips(); renderList(); renderTours(); tourPill(); syncTime(); renderOpenSheet(); if (aboutEl.classList.contains('open')) renderAbout();
+  I.setLang(l); applyStatic(); eraTexts(); caption(); pinTexts(); renderChips(); renderList(); renderTours(); tourPill(); syncTime(); renderOpenSheet(); if (aboutEl.classList.contains('open')) renderAbout(); if (mapsEl.classList.contains('open')) renderMaps();
   if (state.loc) onLoc(state.loc.lat, state.loc.lon, state.loc.acc, state.loc.heading, state.sim);
 }
 function sync3d() { const b = $('#b3d'); b.textContent = state.d3 ? '3D' : '2D'; b.setAttribute('aria-label', t('d3_aria')); b.classList.toggle('on', state.d3); }

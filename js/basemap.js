@@ -149,6 +149,63 @@ function rubblePoly(b) {
   for (let i = 0; i < p.length; i += 2) { const k = 0.82 + rnd() * 0.12; q[i] = b.cx + (p[i] - b.cx) * k + rnd() * 2.2; q[i + 1] = b.cy + (p[i + 1] - b.cy) * k + rnd() * 2.2; }
   return (b.rp = q);
 }
+
+let RUB = null;
+function rubblePattern(ctx, dpr, old) {
+  if (RUB && RUB.dpr === dpr && RUB.old === old) return RUB.p;
+  const S = 112, c = document.createElement('canvas'); c.width = c.height = Math.round(S * dpr); const g = c.getContext('2d'); g.scale(dpr, dpr);
+  let s = 11; const r = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
+  g.clearRect(0, 0, S, S);
+  const rep = (fn) => { for (const ox of [-S, 0, S]) for (const oy of [-S, 0, S]) { g.save(); g.translate(ox, oy); fn(); g.restore(); } };
+  /* soft mottling */
+  for (let i = 0; i < 26; i++) { const x = r() * S, y = r() * S, rad = 8 + r() * 22, dk = r() < .55; rep(() => { const gr = g.createRadialGradient(x, y, 0, x, y, rad); gr.addColorStop(0, dk ? 'rgba(52,42,34,.30)' : 'rgba(225,212,190,.26)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(x - rad, y - rad, rad * 2, rad * 2); }); }
+  /* brick, plaster, charred timber, tile, stone */
+  const cols = old ? ['#6b4b3a', '#3a332c', '#c9bda2', '#7a6a52', '#8e5f48', '#2b2824'] : ['#8a4f3b', '#2f2a26', '#d8ccb6', '#6e6050', '#a2644a', '#4a413a'];
+  for (let i = 0; i < 520; i++) {
+    const x = r() * S, y = r() * S, w = 0.8 + r() * 2.6, h = 0.5 + r() * 1.4, a = r() * 3.1416, col = cols[(r() * cols.length) | 0];
+    rep(() => { g.translate(x, y); g.rotate(a); g.fillStyle = col; g.globalAlpha = .55 + r() * .4; g.fillRect(-w / 2, -h / 2, w, h); });
+  }
+  /* long charred beams and bent rebar */
+  g.globalAlpha = .8; for (let i = 0; i < 16; i++) { const x = r() * S, y = r() * S, L = 4 + r() * 9, a = r() * 3.1416; rep(() => { g.strokeStyle = r() < .7 ? '#2a2420' : '#5b5248'; g.lineWidth = .7 + r() * .8; g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * L, y + Math.sin(a) * L); g.stroke(); }); }
+  g.globalAlpha = 1;
+  /* dust highlights */
+  for (let i = 0; i < 260; i++) { const x = r() * S, y = r() * S; rep(() => { g.fillStyle = 'rgba(240,232,214,' + (.12 + r() * .25) + ')'; g.fillRect(x, y, 1, 1); }); }
+  RUB = { dpr, old, p: ctx.createPattern(c, 'repeat') }; return RUB.p;
+}
+/* jagged remains of outer walls standing amid the debris */
+function wallStubs(ctx, list, mpp, k, old, d3, share) {
+  const px = (n) => n / k, wall = old ? '#bfb08b' : '#b9a994', edge = old ? INK : '#5d5144';
+  ctx.beginPath(); const tops = [];
+  let n = 0;
+  for (const b of list) {
+    const p = b.p, m = p.length;
+    for (let i = 0; i < m; i += 2) {
+      const j = (i + 2) % m, h0 = hash(n * 31 + i);
+      if (h0 > 0.42 * share) continue;
+      const x0 = p[i], y0 = p[i + 1], x1 = p[j], y1 = p[j + 1], L = Math.hypot(x1 - x0, y1 - y0); if (L < 2.5) continue;
+      const a = 0.1 + hash(n * 17 + i) * 0.3, e = a + 0.25 + hash(n * 19 + i) * 0.4, f1 = Math.min(e, 0.98);
+      const segs = Math.max(3, Math.round(L * (f1 - a) / 1.2)), H = d3 ? 1.6 + hash(n * 7 + i) * 2.6 : 0;
+      let px0 = x0 + (x1 - x0) * a, py0 = y0 + (y1 - y0) * a;
+      ctx.moveTo(px0, py0);
+      const pts = [];
+      for (let q = 0; q <= segs; q++) { const t = a + (f1 - a) * q / segs, hh = H * (0.35 + 0.65 * hash(n * 101 + i * 7 + q)); pts.push([x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, hh]); }
+      for (const t of pts) ctx.lineTo(t[0], t[1]);
+      for (let q = pts.length - 1; q >= 0; q--) ctx.lineTo(pts[q][0], pts[q][1] + pts[q][2] + (d3 ? 0 : px(1.6)));
+      ctx.closePath(); tops.push(pts);
+    }
+    n++;
+  }
+  ctx.fillStyle = wall; ctx.fill(); ctx.lineWidth = px(.8); ctx.lineJoin = 'round'; ctx.strokeStyle = edge; ctx.stroke();
+}
+/* a georeferenced historic plan, drawn in world metres under the current transform */
+function drawOvl(ctx, ov) {
+  const im = ov.img; if (!im || !im.complete || !im.naturalWidth) return;
+  const M = ov.M, kx = ov.rw / im.naturalWidth, ky = ov.rh / im.naturalHeight, c = ov.clip;
+  ctx.save(); ctx.globalAlpha = ov.alpha; ctx.imageSmoothingQuality = 'high';
+  ctx.transform(M[0] * kx, M[1] * kx, M[2] * ky, M[3] * ky, M[4], M[5]);
+  if (c) { ctx.beginPath(); ctx.rect(c[0] / kx, c[1] / ky, (c[2] - c[0]) / kx, (c[3] - c[1]) / ky); ctx.clip(); }
+  ctx.drawImage(im, 0, 0); ctx.restore();
+}
 function label(ctx, txt, sx, sy, size, old, spacing, ang, color, halo) {
   ctx.save(); ctx.translate(sx, sy); if (ang) ctx.rotate(ang);
   ctx.font = (old ? 'italic ' : '600 ') + size + 'px ' + (old ? '"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif' : '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif');
@@ -243,18 +300,39 @@ function draw(ctx, V, o) {
   const G = [];
   for (const b of BLD) {
     if (b.lm >= 0 || !vis(b)) continue;
-    if (is1648 && !(b.f & 1)) continue;
+    if (!shown(b, era)) continue;
     if (destr > 0) { const c = dmgOf(b); if (c === 2) { if (b.r < destr) { R.push(b); continue; } } else if (c === 1) { if (b.r < destr) { G.push(b); } } else if (c === 3 && b.r < pr(b) * destr) { R.push(b); continue; } }
     ((b.f & 2) ? C : A).push(b);
   }
   const fine = mpp < 9;
   const drawRubble = () => {
-    if (G.length) { ctx.beginPath(); for (const b of G) poly(ctx, b.p, true); ctx.fillStyle = old ? OLD.rubble : M.rubble; ctx.globalAlpha = 0.55 * Math.min(1, destr + 0.2); ctx.fill(); ctx.globalAlpha = 1; if (!lo) { ctx.lineWidth = px(.9); ctx.strokeStyle = old ? INK : M.rubbleEdge; ctx.setLineDash([px(2), px(2)]); ctx.stroke(); ctx.setLineDash([]); } }
+    if (!R.length && !G.length) return;
+    const rp = rubblePattern(ctx, dpr, old), a = Math.min(1, 0.35 + destr);
+    const base = old ? OLD.rubble : M.rubble;
+    /* half-collapsed buildings: standing outline with debris spilling over */
+    if (G.length) {
+      ctx.beginPath(); for (const b of G) poly(ctx, b.p, true);
+      ctx.globalAlpha = 0.5 * Math.min(1, destr + 0.2); ctx.fillStyle = base; ctx.fill();
+      ctx.fillStyle = patFill(ctx, rp, V); ctx.fill(); ctx.globalAlpha = 1;
+      ctx.lineWidth = px(.9); ctx.strokeStyle = old ? INK : M.rubbleEdge; ctx.setLineDash([px(2), px(2)]); ctx.stroke(); ctx.setLineDash([]);
+      if (mpp < 1.8) wallStubs(ctx, G, mpp, k, old, o.d3 !== false, 0.5);
+    }
     if (!R.length) return;
+    /* ground shadow of the debris heap, then the heap, then the textured surface */
     ctx.beginPath(); for (const b of R) poly(ctx, rubblePoly(b), true);
-    ctx.fillStyle = old ? OLD.rubble : M.rubble; ctx.globalAlpha = Math.min(1, 0.35 + destr); ctx.fill(); ctx.globalAlpha = 1;
-    if (!lo) { ctx.lineWidth = px(.9); ctx.strokeStyle = old ? INK : M.rubbleEdge; if (mpp < 2.2) ctx.setLineDash([px(3), px(2)]); ctx.stroke(); ctx.setLineDash([]); }
-    if (mpp < 3.2 && !lo) { ctx.beginPath(); let i = 0; for (const b of R) { for (let j = 0; j < 4; j++) { const h1 = hash(i * 7 + j), h2 = hash(i * 13 + j + 3), x = b.x0 + (b.x1 - b.x0) * h1, y = b.y0 + (b.y1 - b.y0) * h2, s = 1.4 + h1 * 1.6; ctx.moveTo(x, y); ctx.lineTo(x + s, y + s * .4); ctx.lineTo(x + s * .2, y + s); ctx.closePath(); } i++; } ctx.fillStyle = old ? INK : M.rubbleDot; ctx.globalAlpha = .8; ctx.fill(); ctx.globalAlpha = 1; }
+    ctx.globalAlpha = a; ctx.fillStyle = base; ctx.fill();
+    ctx.fillStyle = patFill(ctx, rp, V); ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.lineJoin = 'round'; ctx.lineWidth = px(old ? 1.1 : 1.6); ctx.strokeStyle = old ? INK : 'rgba(70,56,42,.55)'; ctx.stroke();
+    if (mpp < 3.2) {
+      /* lighter crest on each heap */
+      ctx.beginPath(); for (const b of R) { const q = rubblePoly(b); ctx.moveTo(b.cx + (q[0] - b.cx) * .55, b.cy + (q[1] - b.cy) * .55); for (let n = 2; n < q.length; n += 2) ctx.lineTo(b.cx + (q[n] - b.cx) * .55, b.cy + (q[n + 1] - b.cy) * .55); ctx.closePath(); }
+      ctx.fillStyle = old ? 'rgba(255,250,225,.22)' : 'rgba(255,245,225,.20)'; ctx.fill();
+      /* scattered bricks, timbers and plaster lumps */
+      ctx.beginPath(); let i = 0; for (const b of R) { for (let j = 0; j < 6; j++) { const h1 = hash(i * 7 + j), h2 = hash(i * 13 + j + 3), x = b.x0 + (b.x1 - b.x0) * h1, y = b.y0 + (b.y1 - b.y0) * h2, s = 1.1 + hash(i * 5 + j * 3) * 2.2, an = h1 * 6.28, c = Math.cos(an) * s, d = Math.sin(an) * s * .45; ctx.moveTo(x - c, y - d); ctx.lineTo(x + c, y + d); ctx.lineTo(x + c - d * .8, y + d + c * .35); ctx.lineTo(x - c - d * .8, y - d + c * .35); ctx.closePath(); } i++; }
+      ctx.fillStyle = old ? INK : M.rubbleDot; ctx.globalAlpha = .75; ctx.fill(); ctx.globalAlpha = 1;
+    }
+    if (mpp < 1.8) wallStubs(ctx, R, mpp, k, old, o.d3 !== false, 1);
   };
   const obl = o.d3 !== false && (old ? (is1648 || mpp < 2.2) : mpp < 2.2);
   const pal = old ? { ink: INK, roof: OLD.paper, wall: '#d8cfae', croof: '#85734f', cwall: '#b4a27c', hatch: true } : { ink: M.bldEdge, roof: M.bld, wall: shade(M.bld, .86), croof: M.church, cwall: shade(M.church, .8), hatch: false };
@@ -276,6 +354,8 @@ function draw(ctx, V, o) {
     }
     drawRubble();
   }
+
+  if (o.ovl) drawOvl(ctx, o.ovl);
 
   /* ---- 1648 wall bastion look / wall ---- */
   ctx.beginPath(); for (const p of WALL) poly(ctx, p, false);
@@ -341,8 +421,29 @@ function hit(x, y, tol) {
   }
   return best;
 }
+/* which of today's footprints are drawn in a given era, using the historic plans (see js/hist.js) */
+const hvOf = (b) => (NM.hv && NM.hv[b.i] !== undefined) ? NM.hv[b.i] : -1;
+function ex1648(b) { if (!(b.f & 1)) return false; const v = hvOf(b); if (v < 0) return true; return v % 3 !== 0 || ((v / 9) | 0) === 1; }
+function ex1939(b) {
+  const v = hvOf(b); if (v < 0) return true;
+  const e88 = ((v / 3) | 0) % 3, yc = (v / 9) | 0, cls = dmgOf(b);
+  if (e88 === 1) return true;
+  if (yc === 3) return false;
+  if (yc === 1 || yc === 2) return true;
+  if (cls === 1 || cls === 2) return true;
+  if (e88 === 2) return true;
+  return !(b.f & 1) && b.dd < 2400;
+}
+function shown(b, era) { return era === '1648' ? ex1648(b) : era === '1939' ? ex1939(b) : era === '1945' ? (ex1939(b) || dmgOf(b) < 3) : true; }
+/* how a building's presence in the era is known, for the info card: 'plan' | 'estimate' */
+function evidence(b, era) {
+  const v = hvOf(b); if (v < 0) return 'estimate';
+  if (era === '1648') return v % 3 === 1 ? 'plan' : 'estimate';
+  const e88 = ((v / 3) | 0) % 3, cls = dmgOf(b);
+  return e88 === 1 || cls === 1 || cls === 2 ? 'plan' : 'estimate';
+}
 const dmgOf = (b) => (NM.dmg && NM.dmg[b.i] !== undefined) ? NM.dmg[b.i] : 3;
 const isRubble = (b) => { const c = dmgOf(b); return c === 2 ? true : c === 3 ? (!!(b.f & 1) ? b.r < 0.9 : b.r < Math.max(0.08, 0.62 * Math.exp(-b.dd / 2300))) : false; };
 
-NM.basemap = { draw, hit, isRubble, dmgOf, buildings: BLD, landmarks: LM, ll2m, m2ll, counts: { buildings: BLD.length, landmarkBuildings: LMB.length } };
+NM.basemap = { draw, hit, isRubble, dmgOf, shown, evidence, buildings: BLD, landmarks: LM, ll2m, m2ll, counts: { buildings: BLD.length, landmarkBuildings: LMB.length } };
 })(window);
