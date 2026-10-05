@@ -195,3 +195,10 @@ dl.bi dt{color:var(--muted);font-size:13px}
 dl.bi dd{margin:0;font-weight:600}
 ul.srcs{margin:0;padding:0 0 4px 18px;font-size:13.5px}
 ul.srcs a{color:var(--accent)}
+
+#timebar .tk{position:relative;height:14px;display:block;margin:0 8px}#timebar .tk span{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap}#timebar .tk span:first-child{transform:none}#timebar .tk span:last-child{transform:translateX(-100%)}#timebar .tk span::before{content:'';position:absolute;left:50%;top:-6px;width:1px;height:4px;background:var(--muted)}#timebar>small#tHint{display:block;font-size:10.5px;color:var(--muted);margin-top:2px}
+#tpLabel{display:flex;flex-direction:column;line-height:1.2;min-width:0;max-width:46vw}#tpLabel b{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#tpLabel small{font-size:11px;color:var(--muted);white-space:nowrap}
+#tourItems li.tm{display:flex;gap:6px;padding:10px 0;border:0}#tourItems li.tm button{flex:1;border:1px solid var(--line);background:var(--chip);border-radius:999px;padding:8px;font-size:14px}#tourItems li.tm button.on{background:var(--accent);color:#fff;border-color:var(--accent)}#tourItems li.note{font-size:12px;color:var(--muted);border:0}
+#tourpill{left:10px;transform:none;max-width:calc(100% - 78px);width:max-content}#tpLabel{flex:1 1 auto;max-width:none}
+#tourpill button{padding:6px 9px;font-size:12.5px}
+.photos{margin:12px 0 4px;display:flex;flex-direction:column;gap:12px}.photos figure{margin:0}.photos img{width:100%;max-height:260px;object-fit:cover;border-radius:10px;background:var(--chip);display:block;min-height:90px}.photos figcaption{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.35}.photos figcaption a{color:var(--accent)}
