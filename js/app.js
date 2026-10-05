@@ -383,7 +383,7 @@ function renderAbout() {
     '<h3>' + esc(t('about_inst')) + '</h3><ul><li>' + t('about_ios') + '</li><li>' + t('about_and') + '</li><li>' + esc(t('about_off')) + ' <span id="offlineState"></span></li></ul>' +
     '<h3>' + esc(t('ph_h')) + '</h3><p>' + esc(t('ph_p')) + '</p><p><button type="button" class="btn2" id="phLoad">' + esc(t('ph_btn')) + '</button> <span id="phState"></span></p>' +
     '<h3>' + esc(t('about_map')) + '</h3><p>' + esc(t('about_map_p')) + '</p>' +
-    '<p class="mt">' + esc(t('v_label')) + ' ' + (window.NM_VERSION || '1.6.0') + '</p>';
+    '<p class="mt">' + esc(t('v_label')) + ' ' + (window.NM_VERSION || '1.7.0') + '</p>';
   checkOffline(); $('#phLoad').addEventListener('click', preloadPhotos);
 }
 async function preloadPhotos() {
