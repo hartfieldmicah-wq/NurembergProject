@@ -31,8 +31,37 @@ const statusOf = (l, era) => entryFor(l, era)[0];
 /* ---------- map ---------- */
 const mapEl = $('#map');
 const view = new NM.MapView(mapEl, $('#canvas'), {
-  draw: (ctx, V) => { V.mpp; maybeHD(); B.draw(ctx, V, { ovl: ovlDraw(), style: state.style, era: state.era, destr: state.destr, statusOf: (l) => statusOf(l), route: state.route, leg: state.leg, d3: state.d3, hl: state.hl }); }
+  draw: (ctx, V) => { V.mpp; maybeHD(); paintMap(ctx, V); }
 });
+/* The whole map (buildings, rubble, roads, labels) is rendered ONCE into one prerendered image that is
+   bigger than the screen. Panning/zooming only slides/scales that single image - nothing is redrawn while
+   you move, so every part (including rubble) moves together as one layer. It is redrawn when you stop. */
+const MC = { c: document.createElement('canvas'), ok: false };
+function mapOpts() { return { ovl: ovlDraw(), style: state.style, era: state.era, destr: state.destr, statusOf: (l) => statusOf(l), route: state.route, leg: state.leg, d3: state.d3, hl: state.hl }; }
+function renderMapImage(V) {
+  const dpr = V.dpr, budget = 14e6 / (dpr * dpr);                 // stay under mobile canvas size limits
+  let m = Math.max(V.w, V.h) * 0.6; while ((V.w + 2 * m) * (V.h + 2 * m) > budget && m > 60) m *= 0.9;
+  m = Math.round(m); const W = V.w + 2 * m, H = V.h + 2 * m, c = MC.c;
+  if (c.width !== Math.round(W * dpr) || c.height !== Math.round(H * dpr)) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); }
+  const CV = Object.create(V); CV.w = W; CV.h = H; CV.moving = false;
+  B.draw(c.getContext('2d'), CV, mapOpts());
+  Object.assign(MC, { ok: true, x: V.x, y: V.y, z: V.z, W, H, dpr, w: V.w, h: V.h });
+  V.contentDirty = false;
+}
+function paintMap(ctx, V) {
+  const s = Math.pow(2, V.z - MC.z), k = V.k;
+  const place = () => [V.w / 2 + (MC.x - V.x) * k - MC.W / 2 * s, V.h / 2 - (MC.y - V.y) * k - MC.H / 2 * s];
+  let reuse = V.moving && !V.contentDirty && MC.ok && MC.dpr === V.dpr && MC.w === V.w && MC.h === V.h && s > 0.7 && s < 1.8;
+  if (reuse) { const [dx, dy] = place(); reuse = dx <= 0 && dy <= 0 && dx + MC.W * s >= V.w && dy + MC.H * s >= V.h; }
+  if (!reuse) renderMapImage(V);
+  const sc = Math.pow(2, V.z - MC.z), [dx, dy] = (function () { const k2 = V.k; return [V.w / 2 + (MC.x - V.x) * k2 - MC.W / 2 * sc, V.h / 2 - (MC.y - V.y) * k2 - MC.H / 2 * sc]; })();
+  const d = V.dpr;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = state.style === 'old' ? '#e9e3cd' : '#f1eee6'; ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  ctx.imageSmoothingEnabled = true;
+  if (Math.abs(sc - 1) < 1e-9) ctx.drawImage(MC.c, Math.round(dx * d), Math.round(dy * d));
+  else ctx.drawImage(MC.c, dx * d, dy * d, MC.c.width * sc, MC.c.height * sc);
+}
 function fitHome() {
   const z = view.zoomForSize(2300, 2000, 20, 190);
   view.setView(-60, 10, Math.min(Math.max(z, 13.5), 16.5));

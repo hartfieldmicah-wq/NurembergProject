@@ -24,14 +24,15 @@ class MapView {
   emit(n, a) { (this.listeners[n] || []).forEach(f => f(a)); }
   wts(X, Y) { const k = this.k; return [this.w / 2 + (X - this.x) * k, this.h / 2 - (Y - this.y) * k]; }
   stw(sx, sy) { const k = this.k; return [this.x + (sx - this.w / 2) / k, this.y - (sy - this.h / 2) / k]; }
-  render() { this.dirty = true; }
-  touch() { this.moving = true; this._mt = performance.now(); this.dirty = true; }
+  render() { this.dirty = true; this.contentDirty = true; }
+  /* touch(true) = only the view moved (pan/zoom/fling): the prerendered map image is reused, not redrawn */
+  touch(viewOnly) { this.moving = true; this._mt = performance.now(); this.dirty = true; if (!viewOnly) this.contentDirty = true; }
   resize() {
     const r = this.el.getBoundingClientRect();
     this.w = Math.max(1, r.width); this.h = Math.max(1, r.height);
     this.dpr = Math.min(window.devicePixelRatio || 1, 2.5);
     this.canvas.width = Math.round(this.w * this.dpr); this.canvas.height = Math.round(this.h * this.dpr);
-    this.dirty = true; this.emit('resize');
+    this.dirty = true; this.contentDirty = true; this.emit('resize');
   }
   zoomForSize(wm, hm, padX, padY) {
     const k = Math.min((this.w - padX) / wm, (this.h - padY) / hm);
@@ -48,9 +49,9 @@ class MapView {
     this.z = Math.max(this.opts.minZ, Math.min(this.opts.maxZ, newZ));
     const after = this.stw(sx, sy);
     this.x += before[0] - after[0]; this.y += before[1] - after[1];
-    this._clamp(); this.touch();
+    this._clamp(); this.touch(true);
   }
-  panPx(dx, dy) { const k = this.k; this.x -= dx / k; this.y += dy / k; this._clamp(); this.touch(); }
+  panPx(dx, dy) { const k = this.k; this.x -= dx / k; this.y += dy / k; this._clamp(); this.touch(true); }
   flyTo(x, y, z, ms) {
     this.fling = null;
     z = Math.max(this.opts.minZ, Math.min(this.opts.maxZ, z));
@@ -64,7 +65,7 @@ class MapView {
       this.z = a.z0 + (a.z1 - a.z0) * e;
       // interpolate in screen-consistent way: blend centre linearly
       this.x = a.x0 + (a.x1 - a.x0) * e; this.y = a.y0 + (a.y1 - a.y0) * e;
-      this._clamp(); this.touch(); if (p >= 1) { this.anim = null; this.emit('moveend'); }
+      this._clamp(); this.touch(true); if (p >= 1) { this.anim = null; this.emit('moveend'); }
     } else if (this.fling) {
       const f = this.fling, dt = Math.min(48, t - f.t); f.t = t;
       const decay = Math.pow(0.0025, dt / 1000); f.vx *= decay; f.vy *= decay;
