@@ -159,3 +159,39 @@ body.style-old #banner,body.style-old #wreath{display:block}
 .clus button{position:absolute;left:-23px;top:-23px;width:46px;height:46px;border-radius:50%;border:3px solid #fff;background:#a8322d;color:#fff;font:700 17px/1 var(--font);box-shadow:0 2px 8px rgba(0,0,0,.45);pointer-events:auto;padding:0;display:grid;place-items:center}
 .clus button small{display:block;font:600 9px/1 var(--font);opacity:.9;margin-top:1px}
 body.style-old .clus button{background:#8b2e1f;border-color:#e9e3cd}
+
+/* ---- v1.3: language, tours, timeline, building card ---- */
+.fab.lang{font:700 14px/1 var(--font);letter-spacing:.04em}
+@media (max-height:760px){.fab{width:40px;height:40px}.fab svg{width:19px;height:19px}#side{gap:7px}}
+#tourpill{position:absolute;left:50%;transform:translateX(-50%);top:calc(var(--st) + 66px);z-index:4;display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px 6px;box-shadow:0 2px 12px rgba(0,0,0,.28);max-width:calc(100% - 80px);font-family:var(--font)}
+#tourpill[hidden]{display:none}
+#tourpill button{border:0;background:var(--chip);border-radius:999px;padding:6px 10px;font-size:13px;white-space:nowrap}
+#tourpill button:disabled{opacity:.35}
+#tourpill button.end{background:var(--accent);color:#fff}
+#tpLabel{font-size:12.5px;font-weight:600;padding:0 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:40vw}
+.pin.tour::before{content:attr(data-n);position:absolute;left:-30px;top:-60px;min-width:20px;height:20px;border-radius:10px;background:#1e2024;color:#fff;font:700 12px/20px var(--font);text-align:center;padding:0 4px;z-index:2;box-shadow:0 0 0 2px #fff}
+.pin.tour.cur::before{background:var(--accent)}
+#timebar{position:absolute;left:10px;right:10px;bottom:calc(var(--eras-h) + var(--sb) + 8px);z-index:7;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px 14px 8px;box-shadow:0 4px 18px rgba(0,0,0,.35);transform:translateY(200%);visibility:hidden;transition:transform .25s ease,visibility 0s .25s;font-family:var(--font)}
+#timebar.open{transform:none;visibility:visible;transition:transform .25s ease,visibility 0s}
+#timebar .tr{display:flex;align-items:baseline;gap:10px}
+#tYear{font-size:22px;min-width:3.2em}
+#tName{font-size:13px;color:var(--accent);font-weight:600}
+#tTitle{margin-left:auto;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+#tRange{width:100%;margin:6px 0 2px;accent-color:var(--accent);height:28px}
+#timebar .tk{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted)}
+#tHint{opacity:.8}
+body.timeopen #sheet{bottom:calc(var(--eras-h) + var(--sb) + 100px);max-height:44%}
+body.timeopen #hint{display:none}
+#tours{position:absolute;inset:0;background:var(--panel);z-index:8;transform:translateY(105%);transition:transform .28s ease;display:flex;flex-direction:column;padding:calc(var(--st) + 10px) 14px calc(var(--sb) + 10px);visibility:hidden}
+#tours.open{transform:none;visibility:visible}
+#tourItems{list-style:none;margin:0;padding:0;overflow:auto;flex:1}
+#tourItems li{padding:14px 4px;border-bottom:1px solid var(--line)}
+#tourItems .nm{font-weight:700;font-size:17px}
+#tourItems .mt{font-size:13px;color:var(--muted);margin:3px 0}
+#tourItems .mt.b{color:var(--ink)}
+#tourItems .btn2{margin-top:8px}
+dl.bi{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:8px 0 4px;font-size:15px}
+dl.bi dt{color:var(--muted);font-size:13px}
+dl.bi dd{margin:0;font-weight:600}
+ul.srcs{margin:0;padding:0 0 4px 18px;font-size:13.5px}
+ul.srcs a{color:var(--accent)}
