@@ -49,6 +49,47 @@ const TOWERS = (function () {
   return t;
 })();
 
+
+/* ---------- star bastions (1648) generated along the outer wall ring ---------- */
+const BAST = (function () {
+  const P = RING.map(q => [q[0], q[1]]); let A = 0;
+  for (let i = 0; i < P.length; i++) { const a = P[i], b = P[(i + 1) % P.length]; A += a[0] * b[1] - b[0] * a[1]; }
+  const sg = A > 0 ? 1 : -1, out = []; let acc = 150;
+  const sh = [[-62, -16], [-62, 16], [-28, 70], [0, 108], [28, 70], [62, 16], [62, -16]];
+  for (let i = 0; i < P.length; i++) {
+    const a = P[i], b = P[(i + 1) % P.length], dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy); if (!L) continue;
+    const tx = dx / L, ty = dy / L, nx = sg * ty, ny = -sg * tx; let d = 0;
+    while (acc + (L - d) >= 290) { d += 290 - acc; acc = 0; const px = a[0] + tx * d, py = a[1] + ty * d;
+      const T = (s) => sh.map(q => [px + tx * q[0] * s + nx * q[1] * s, py + ty * q[0] * s + ny * q[1] * s]);
+      out.push({ o: T(1), g: T(1.24) }); }
+    acc += L - d;
+  }
+  return out;
+})();
+
+/* ---------- oblique "bird's-eye" houses (old map) ---------- */
+function prep3d(b) {
+  if (b.h) return; const p = b.p, n = p.length / 2; let A = 0, bl = 0, bx = 1, by = 0;
+  for (let i = 0; i < n; i++) { const x = p[2 * i], y = p[2 * i + 1], j = (i + 1) % n, x2 = p[2 * j], y2 = p[2 * j + 1]; A += x * y2 - x2 * y; const l = Math.hypot(x2 - x, y2 - y); if (l > bl) { bl = l; bx = (x2 - x) / l; by = (y2 - y) / l; } }
+  b.ccw = A > 0; b.h = Math.min(24, 7 + Math.sqrt(b.ar) * 0.32) * ((b.f & 2) ? 1.7 : 1);
+  let mn = 1e9, mx = -1e9; for (let i = 0; i < n; i++) { const d = (p[2 * i] - b.cx) * bx + (p[2 * i + 1] - b.cy) * by; if (d < mn) mn = d; if (d > mx) mx = d; }
+  b.rdx = bx; b.rdy = by; b.r0 = mn * 0.78; b.r1 = mx * 0.78;
+}
+function drawOblique(ctx, T, V, PT, lo, mpp) {
+  const k = V.k, w = 0.8 / k; ctx.lineWidth = w; ctx.strokeStyle = INK; ctx.lineJoin = 'round';
+  const hatch = (!lo && mpp < 6) ? patFill(ctx, PT.hatch, V) : null;
+  for (const b of T) {
+    prep3d(b); const off = Math.max(b.h * 0.6, mpp * 2.2), p = b.p, n = p.length / 2, ch = b.f & 2;
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) { const j = (i + 1) % n, x = p[2 * i], y = p[2 * i + 1], x2 = p[2 * j], y2 = p[2 * j + 1], dx = x2 - x;
+      if (b.ccw ? dx > 0 : dx < 0) { ctx.moveTo(x, y); ctx.lineTo(x2, y2); ctx.lineTo(x2, y2 + off); ctx.lineTo(x, y + off); ctx.closePath(); } }
+    ctx.fillStyle = ch ? '#b4a27c' : '#d8cfae'; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(p[0], p[1] + off); for (let i = 1; i < n; i++) ctx.lineTo(p[2 * i], p[2 * i + 1] + off); ctx.closePath();
+    ctx.fillStyle = ch ? '#85734f' : OLD.paper; ctx.fill(); if (hatch) { ctx.fillStyle = hatch; ctx.fill(); } ctx.stroke();
+    if (!lo && mpp < 3.5) { ctx.beginPath(); ctx.moveTo(b.cx + b.rdx * b.r0, b.cy + b.rdy * b.r0 + off); ctx.lineTo(b.cx + b.rdx * b.r1, b.cy + b.rdy * b.r1 + off); ctx.stroke(); }
+  }
+}
+
 /* ---------- landmarks and their real buildings ---------- */
 const LM = D.LANDMARKS.map(l => Object.assign({ m: ll2m(l.lon, l.lat) }, l));
 const ASSOC = { kaiserburg: [110, .06], durer: [16, .3], frauenkirche: [30, .5], sebald: [45, .5], lorenz: [55, .5], rathaus: [50, .4],
@@ -63,12 +104,12 @@ LM.forEach((l, li) => {
 const LMB = BLD.filter(b => b.lm >= 0);
 
 /* ---------- styles ---------- */
-const INK = '#3b2c18';
+const INK = '#2b2923';
 const M = { bg: '#f1eee6', park: '#cfe5bf', forest: '#bcd8a6', cem: '#c8dcc2', rec: '#d9e9c7', water: '#a9d3ec', waterEdge: '#86b9d9',
   bld: '#dfd6c9', bldEdge: '#c4b9a8', church: '#d3bfb4', rubble: '#a99682', rubbleDot: '#5a4d40', rubbleEdge: '#7d6c5a',
   rail: '#9a9a9a', wall: '#8b6e4e', tower: '#d9c7a8', label: '#575047', halo: 'rgba(255,255,255,.85)', river: '#4a86ad',
   rc: [['#d9a266', '#f7c9a0'], ['#d3b45f', '#fde7a8'], ['#c7c0b2', '#ffffff'], ['#cfc9bd', '#ffffff'], ['#d3cdc1', '#ffffff'], ['#dcd6ca', '#f3efe7'], ['#dad4c8', '#fbfaf7'], ['#e4ddd1', '#e4ddd1']] };
-const OLD = { wash: '#e6d7b0', park: '#e0d6a8', forest: '#d8cd9b', water: '#cdd5c0', paper: '#efe5c6', rubble: '#a68f66', label: INK, halo: 'rgba(238,224,185,.88)' };
+const OLD = { wash: '#e8e1c8', park: '#dcd6b4', forest: '#d3cdaa', water: '#cfd5c4', paper: '#f1ecd9', rubble: '#a89a78', label: INK, halo: 'rgba(233,227,205,.9)' };
 const RW = [[16, 3.4, 2], [13, 3, 1.9], [11, 2.5, 1.8], [9, 2.1, 1.7], [7, 1.7, 1.6], [6, 1.5, 1.5], [4, 1.1, 1.3], [2.2, .8, 0]];   // [real metres, min px, casing px]
 const RV = [4.6, 3.2, 2.6, 2.2, 1.9, 1.7, 1.2, 0.9];   // road visible when mpp < ... (inverse listed below)
 const ROADMAX = [99, 99, 30, 14, 7, 5, 2.6, 1.6];
@@ -78,19 +119,19 @@ function paperPattern(ctx) {
   if (paper) return paper;
   const c = document.createElement('canvas'); c.width = c.height = 512;
   const g = c.getContext('2d'); let s = 7; const r = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
-  g.fillStyle = '#e6d7b0'; g.fillRect(0, 0, 512, 512);
-  for (let i = 0; i < 45; i++) { const x = r() * 512, y = r() * 512, rad = 30 + r() * 90, gr = g.createRadialGradient(x, y, 0, x, y, rad); const d = r() < .5; gr.addColorStop(0, d ? 'rgba(120,80,30,.07)' : 'rgba(255,245,215,.10)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(x - rad, y - rad, rad * 2, rad * 2); }
-  for (let i = 0; i < 7000; i++) { g.fillStyle = 'rgba(90,60,20,' + (0.03 + r() * 0.08) + ')'; g.fillRect(r() * 512, r() * 512, 1 + r() * 1.2, 1); }
+  g.fillStyle = '#e9e3cd'; g.fillRect(0, 0, 512, 512);
+  for (let i = 0; i < 45; i++) { const x = r() * 512, y = r() * 512, rad = 30 + r() * 90, gr = g.createRadialGradient(x, y, 0, x, y, rad); const d = r() < .5; gr.addColorStop(0, d ? 'rgba(110,95,60,.06)' : 'rgba(255,252,235,.10)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(x - rad, y - rad, rad * 2, rad * 2); }
+  for (let i = 0; i < 7000; i++) { g.fillStyle = 'rgba(80,70,40,' + (0.03 + r() * 0.08) + ')'; g.fillRect(r() * 512, r() * 512, 1 + r() * 1.2, 1); }
   paper = { pattern: ctx.createPattern(c, 'repeat') }; return paper;
 }
 function patterns(ctx, dpr) {
   if (PAT && PAT.dpr === dpr) return PAT;
   const mk = (w, h, fn) => { const c = document.createElement('canvas'); c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); const g = c.getContext('2d'); g.scale(dpr, dpr); fn(g, w, h); return ctx.createPattern(c, 'repeat'); };
   PAT = { dpr,
-    hatch: mk(4.5, 4.5, (g, w, h) => { g.strokeStyle = 'rgba(59,44,24,.62)'; g.lineWidth = 0.9; g.beginPath(); g.moveTo(-1, h + 1); g.lineTo(w + 1, -1); g.moveTo(-1 - w / 2, h / 2 + 1); g.lineTo(w / 2 + 1, -1 - h / 2 + 0); g.moveTo(w / 2 - 1, h + 1); g.lineTo(w + w / 2 + 1, h / 2 - 1); g.stroke(); }),
-    waves: mk(7, 4, (g, w, h) => { g.strokeStyle = 'rgba(59,44,24,.55)'; g.lineWidth = 0.7; g.beginPath(); g.moveTo(0, h / 2); g.quadraticCurveTo(w / 4, h / 2 - 1.3, w / 2, h / 2); g.quadraticCurveTo(w * 3 / 4, h / 2 + 1.3, w, h / 2); g.stroke(); }),
-    trees: mk(11, 11, (g, w, h) => { g.strokeStyle = 'rgba(59,44,24,.7)'; g.lineWidth = 0.8; g.beginPath(); g.arc(3, 3.5, 2.4, 0, 6.3); g.moveTo(8.8, 8.8); g.arc(8.2, 9, 2.2, 0, 6.3); g.stroke(); }),
-    dots: mk(6, 6, (g) => { g.fillStyle = 'rgba(59,44,24,.5)'; g.beginPath(); g.arc(1.5, 1.5, .6, 0, 6.3); g.arc(4.5, 4.5, .5, 0, 6.3); g.fill(); })
+    hatch: mk(4.5, 4.5, (g, w, h) => { g.strokeStyle = 'rgba(43,41,35,.62)'; g.lineWidth = 0.9; g.beginPath(); g.moveTo(-1, h + 1); g.lineTo(w + 1, -1); g.moveTo(-1 - w / 2, h / 2 + 1); g.lineTo(w / 2 + 1, -1 - h / 2 + 0); g.moveTo(w / 2 - 1, h + 1); g.lineTo(w + w / 2 + 1, h / 2 - 1); g.stroke(); }),
+    waves: mk(7, 4, (g, w, h) => { g.strokeStyle = 'rgba(43,41,35,.55)'; g.lineWidth = 0.7; g.beginPath(); g.moveTo(0, h / 2); g.quadraticCurveTo(w / 4, h / 2 - 1.3, w / 2, h / 2); g.quadraticCurveTo(w * 3 / 4, h / 2 + 1.3, w, h / 2); g.stroke(); }),
+    trees: mk(11, 11, (g, w, h) => { g.strokeStyle = 'rgba(43,41,35,.7)'; g.lineWidth = 0.8; g.beginPath(); g.arc(3, 3.5, 2.4, 0, 6.3); g.moveTo(8.8, 8.8); g.arc(8.2, 9, 2.2, 0, 6.3); g.stroke(); }),
+    dots: mk(6, 6, (g) => { g.fillStyle = 'rgba(43,41,35,.5)'; g.beginPath(); g.arc(1.5, 1.5, .6, 0, 6.3); g.arc(4.5, 4.5, .5, 0, 6.3); g.fill(); })
   };
   return PAT;
 }
@@ -149,7 +190,7 @@ function draw(ctx, V, o) {
   for (const c of [1, 0]) {
     ctx.beginPath(); let any = false; for (const w of WW) if (w.c === c && vis(w)) { poly(ctx, w.p, false); any = true; }
     if (!any) continue; const wm = c === 0 ? 11 : 3, wpx = Math.max(c === 0 ? 2.6 : 1.4, wm * k);
-    if (old) { ctx.lineWidth = px(wpx + 1.6); ctx.strokeStyle = INK; ctx.stroke(); ctx.lineWidth = px(wpx); ctx.strokeStyle = OLD.water; ctx.stroke(); if (wpx > 4) { ctx.setLineDash([px(4), px(4)]); ctx.lineWidth = px(.7); ctx.strokeStyle = 'rgba(59,44,24,.6)'; ctx.stroke(); ctx.setLineDash([]); } }
+    if (old) { ctx.lineWidth = px(wpx + 1.6); ctx.strokeStyle = INK; ctx.stroke(); ctx.lineWidth = px(wpx); ctx.strokeStyle = OLD.water; ctx.stroke(); if (wpx > 4) { ctx.setLineDash([px(4), px(4)]); ctx.lineWidth = px(.7); ctx.strokeStyle = 'rgba(43,41,35,.6)'; ctx.stroke(); ctx.setLineDash([]); } }
     else { ctx.lineWidth = px(wpx + 1.4); ctx.strokeStyle = M.waterEdge; ctx.stroke(); ctx.lineWidth = px(wpx); ctx.strokeStyle = M.water; ctx.stroke(); }
   }
 
@@ -174,13 +215,22 @@ function draw(ctx, V, o) {
     const w = Math.max(RW[c][1], RW[c][0] * k), cs = RW[c][2];
     if (old) {
       if (c < 7) { ctx.lineWidth = px(w + 1.3); ctx.strokeStyle = INK; ctx.stroke(); ctx.lineWidth = px(w); ctx.strokeStyle = OLD.paper; ctx.stroke(); }
-      else { ctx.lineWidth = px(.7); ctx.strokeStyle = 'rgba(59,44,24,.55)'; ctx.setLineDash([px(3), px(2)]); ctx.stroke(); ctx.setLineDash([]); }
+      else { ctx.lineWidth = px(.7); ctx.strokeStyle = 'rgba(43,41,35,.55)'; ctx.setLineDash([px(3), px(2)]); ctx.stroke(); ctx.setLineDash([]); }
     } else {
       if (c < 7) { ctx.lineWidth = px(w + cs); ctx.strokeStyle = M.rc[c][0]; ctx.stroke(); ctx.lineWidth = px(w); ctx.strokeStyle = M.rc[c][1]; ctx.stroke(); }
       else { ctx.lineWidth = px(Math.max(1, w)); ctx.strokeStyle = M.rc[7][0]; ctx.setLineDash([px(3), px(2)]); ctx.stroke(); ctx.setLineDash([]); }
     }
   }
   ctx.restore();
+
+  /* ---- bastions (1648) ---- */
+  if (is1648) {
+    ctx.beginPath(); for (const bs of BAST) poly(ctx, bs.g, true);
+    ctx.fillStyle = old ? 'rgba(43,41,35,.07)' : 'rgba(139,110,78,.12)'; ctx.fill(); ctx.lineWidth = px(.8); ctx.strokeStyle = old ? INK : M.wall; ctx.stroke();
+    ctx.beginPath(); for (const bs of BAST) poly(ctx, bs.o, true);
+    ctx.fillStyle = old ? OLD.paper : '#e4dccb'; ctx.fill(); if (old && !lo) { ctx.fillStyle = patFill(ctx, PT.hatch, V); ctx.fill(); }
+    ctx.lineWidth = px(old ? 1.8 : 1.4); ctx.strokeStyle = old ? INK : M.wall; ctx.stroke();
+  }
 
   /* ---- buildings ---- */
   const bFill = old ? OLD.paper : M.bld;
@@ -193,20 +243,28 @@ function draw(ctx, V, o) {
     ((b.f & 2) ? C : A).push(b);
   }
   const fine = mpp < 9;
-  if (A.length) {
-    ctx.beginPath(); for (const b of A) poly(ctx, b.p, true);
-    if (old) { ctx.fillStyle = bFill; ctx.fill(); if (mpp < 7 && !lo) { ctx.fillStyle = patFill(ctx, PT.hatch, V); ctx.fill(); } ctx.lineWidth = px(mpp < 7 ? .9 : .5); ctx.strokeStyle = INK; ctx.stroke(); }
-    else { ctx.fillStyle = M.bld; ctx.fill(); if (fine && !lo) { ctx.lineWidth = px(.8); ctx.strokeStyle = M.bldEdge; ctx.stroke(); } }
-  }
-  if (C.length) {
-    ctx.beginPath(); for (const b of C) poly(ctx, b.p, true);
-    ctx.fillStyle = old ? '#6f4a2c' : M.church; ctx.fill(); ctx.lineWidth = px(.9); ctx.strokeStyle = old ? INK : '#b39e90'; ctx.stroke();
-  }
-  if (R.length) {
+  const drawRubble = () => {
+    if (!R.length) return;
     ctx.beginPath(); for (const b of R) poly(ctx, rubblePoly(b), true);
     ctx.fillStyle = old ? OLD.rubble : M.rubble; ctx.globalAlpha = Math.min(1, 0.35 + destr); ctx.fill(); ctx.globalAlpha = 1;
     if (!lo) { ctx.lineWidth = px(.9); ctx.strokeStyle = old ? INK : M.rubbleEdge; if (mpp < 2.2) ctx.setLineDash([px(3), px(2)]); ctx.stroke(); ctx.setLineDash([]); }
     if (mpp < 3.2 && !lo) { ctx.beginPath(); let i = 0; for (const b of R) { for (let j = 0; j < 4; j++) { const h1 = hash(i * 7 + j), h2 = hash(i * 13 + j + 3), x = b.x0 + (b.x1 - b.x0) * h1, y = b.y0 + (b.y1 - b.y0) * h2, s = 1.4 + h1 * 1.6; ctx.moveTo(x, y); ctx.lineTo(x + s, y + s * .4); ctx.lineTo(x + s * .2, y + s); ctx.closePath(); } i++; } ctx.fillStyle = old ? INK : M.rubbleDot; ctx.globalAlpha = .8; ctx.fill(); ctx.globalAlpha = 1; }
+  };
+  if (old && (is1648 || mpp < 2.2)) {
+    drawRubble();
+    const T = A.concat(C); T.sort((a, b) => b.cy - a.cy);
+    drawOblique(ctx, T, V, PT, lo, mpp);
+  } else {
+    if (A.length) {
+      ctx.beginPath(); for (const b of A) poly(ctx, b.p, true);
+      if (old) { ctx.fillStyle = bFill; ctx.fill(); if (mpp < 7 && !lo) { ctx.fillStyle = patFill(ctx, PT.hatch, V); ctx.fill(); } ctx.lineWidth = px(mpp < 7 ? .9 : .5); ctx.strokeStyle = INK; ctx.stroke(); }
+      else { ctx.fillStyle = M.bld; ctx.fill(); if (fine && !lo) { ctx.lineWidth = px(.8); ctx.strokeStyle = M.bldEdge; ctx.stroke(); } }
+    }
+    if (C.length) {
+      ctx.beginPath(); for (const b of C) poly(ctx, b.p, true);
+      ctx.fillStyle = old ? '#6f5a3f' : M.church; ctx.fill(); ctx.lineWidth = px(.9); ctx.strokeStyle = old ? INK : '#b39e90'; ctx.stroke();
+    }
+    drawRubble();
   }
 
   /* ---- 1648 wall bastion look / wall ---- */
@@ -238,7 +296,7 @@ function draw(ctx, V, o) {
 
   if (old) {
     const g = ctx.createRadialGradient(V.w / 2, V.h / 2, Math.min(V.w, V.h) * 0.35, V.w / 2, V.h / 2, Math.max(V.w, V.h) * 0.75);
-    g.addColorStop(0, 'rgba(90,55,15,0)'); g.addColorStop(1, 'rgba(90,55,15,.32)'); ctx.fillStyle = g; ctx.fillRect(0, 0, V.w, V.h);
+    g.addColorStop(0, 'rgba(70,60,30,0)'); g.addColorStop(1, 'rgba(70,60,30,.26)'); ctx.fillStyle = g; ctx.fillRect(0, 0, V.w, V.h);
   }
 }
 

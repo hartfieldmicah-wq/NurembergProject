@@ -48,15 +48,46 @@ function refreshPins() {
 function pulsePins() { LMS.forEach(l => pinEls[l.id].classList.add('pulse')); setTimeout(() => LMS.forEach(l => pinEls[l.id].classList.remove('pulse')), 5200); }
 
 const userEl = $('#user');
+const clusEl = document.createElement('div'); clusEl.id = 'clusters'; layerEl.appendChild(clusEl);
+const clusPool = [];
+function clusterBtn(i) {
+  if (clusPool[i]) return clusPool[i];
+  const w = document.createElement('div'); w.className = 'clus';
+  const b = document.createElement('button'); b.type = 'button'; w.appendChild(b); clusEl.appendChild(w);
+  b.addEventListener('click', (e) => {
+    e.stopPropagation(); if (view.moved) return; const m = w._members || []; if (!m.length) return;
+    let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; m.forEach(l => { x0 = Math.min(x0, l.m[0]); x1 = Math.max(x1, l.m[0]); y0 = Math.min(y0, l.m[1]); y1 = Math.max(y1, l.m[1]); });
+    const fit = view.zoomForSize(Math.max(x1 - x0, 70), Math.max(y1 - y0, 70), 150, 330);
+    view.flyTo((x0 + x1) / 2, (y0 + y1) / 2, Math.min(18.6, Math.max(fit, view.z + 1)), 600); hideHint();
+  });
+  return (clusPool[i] = w);
+}
 view.on('render', () => {
-  const z = view.z;
+  const z = view.z, ps = z < 14.4 ? 0.55 : z < 15.1 ? 0.66 : z < 15.9 ? 0.82 : 1;
   layerEl.dataset.labels = z >= 15.7 ? '1' : '0';
-  pinsEl.style.setProperty('--ps', z < 14.4 ? 0.55 : z < 15.1 ? 0.66 : z < 15.9 ? 0.82 : 1);
-  for (const l of LMS) {
-    const s = view.wts(l.m[0], l.m[1]), p = pinEls[l.id];
-    p.style.transform = 'translate3d(' + s[0].toFixed(1) + 'px,' + s[1].toFixed(1) + 'px,0)';
-    p.style.display = (s[0] < -80 || s[0] > view.w + 80 || s[1] < -80 || s[1] > view.h + 120) ? 'none' : '';
+  pinsEl.style.setProperty('--ps', ps);
+  const sc = {}, par = {}; LMS.forEach(l => { sc[l.id] = view.wts(l.m[0], l.m[1]); par[l.id] = l.id; });
+  const find = (i) => par[i] === i ? i : (par[i] = find(par[i])), thr = 40 * ps + 8;
+  for (let a = 0; a < LMS.length; a++) for (let b = a + 1; b < LMS.length; b++) {
+    const A = LMS[a].id, B = LMS[b].id; if (A === state.sel || B === state.sel) continue;
+    if (Math.hypot(sc[A][0] - sc[B][0], sc[A][1] - sc[B][1]) < thr) par[find(B)] = find(A);
   }
+  const groups = {}; LMS.forEach(l => { const r = find(l.id); (groups[r] = groups[r] || []).push(l); });
+  let ci = 0;
+  for (const r in groups) {
+    const g = groups[r];
+    if (g.length === 1) {
+      const l = g[0], s = sc[l.id], p = pinEls[l.id];
+      p.style.transform = 'translate3d(' + s[0].toFixed(1) + 'px,' + s[1].toFixed(1) + 'px,0)';
+      p.style.display = (s[0] < -80 || s[0] > view.w + 80 || s[1] < -80 || s[1] > view.h + 120) ? 'none' : '';
+    } else {
+      let cx = 0, cy = 0; g.forEach(l => { cx += sc[l.id][0]; cy += sc[l.id][1]; pinEls[l.id].style.display = 'none'; }); cx /= g.length; cy /= g.length;
+      const w = clusterBtn(ci++); w._members = g; w.style.display = '';
+      w.style.transform = 'translate3d(' + cx.toFixed(1) + 'px,' + cy.toFixed(1) + 'px,0)';
+      const b = w.firstChild; b.innerHTML = g.length + '<small>places</small>'; b.setAttribute('aria-label', g.length + ' landmarks here. Tap to zoom in.');
+    }
+  }
+  for (let i = ci; i < clusPool.length; i++) clusPool[i].style.display = 'none';
   if (state.loc) {
     const m = G.ll2m(state.loc.lon, state.loc.lat), s = view.wts(m[0], m[1]);
     userEl.style.transform = 'translate3d(' + s[0].toFixed(1) + 'px,' + s[1].toFixed(1) + 'px,0)';
@@ -64,6 +95,16 @@ view.on('render', () => {
     a.style.width = a.style.height = d + 'px'; a.style.left = a.style.top = (-d / 2) + 'px';
   }
 });
+// ornament for the old-map style: laurel wreath with two shields
+(function () {
+  const w = document.getElementById('wreath'); if (!w) return; let h = '';
+  for (let i = 0; i < 26; i++) { const a = i / 26 * 360, side = i % 2 ? 1 : -1; h += '<ellipse cx="50" cy="12" rx="2.6" ry="6.4" transform="rotate(' + a + ' 50 50) rotate(' + side * 28 + ' 50 12)" fill="none" stroke="currentColor" stroke-width="1"/>'; }
+  h += '<circle cx="50" cy="50" r="33" fill="none" stroke="currentColor" stroke-width=".8"/>';
+  h += '<path d="M27 33h20v17c0 9-7 13-10 15-3-2-10-6-10-15z" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M53 33h20v17c0 9-7 13-10 15-3-2-10-6-10-15z" fill="none" stroke="currentColor" stroke-width="1.4"/>';
+  for (let x = 30; x < 46; x += 2.4) h += '<line x1="' + x + '" y1="35" x2="' + x + '" y2="56" stroke="currentColor" stroke-width=".8"/>';
+  for (let y = 36; y < 58; y += 4) h += '<rect x="55" y="' + y + '" width="16" height="2" fill="currentColor"/>';
+  w.innerHTML = h;
+})();
 view.on('movestart', () => { state.follow = false; $('#bLocate').classList.remove('on'); hideHint(); });
 
 /* ---------- eras ---------- */
@@ -104,7 +145,7 @@ function setStyle(s) {
   state.style = s; store.set('nm_style', s);
   document.body.className = document.body.className.replace(/style-\S+/, 'style-' + s);
   styleSeg.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.style === s));
-  const tc = document.querySelector('meta[name=theme-color]'); if (tc) tc.content = s === 'old' ? '#3b2c18' : '#1d1b18';
+  const tc = document.querySelector('meta[name=theme-color]'); if (tc) tc.content = s === 'old' ? '#2b2923' : '#1d1b18';
   view.render();
 }
 styleSeg.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) setStyle(b.dataset.style); });
